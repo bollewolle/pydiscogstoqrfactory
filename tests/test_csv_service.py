@@ -96,6 +96,28 @@ class TestCSVService:
         data = next(reader)
         assert len(data) == 30
 
+    def test_unknown_year_shows_unknown(self):
+        release = {
+            "id": 456,
+            "artist": "Test Artist",
+            "title": "Test Album",
+            "year": 0,
+            "discogs_folder": "Folder",
+        }
+        rows = self.service.generate_rows([release])
+        assert "[unknown]" in rows[0]["BottomText"]
+        assert "[0]" not in rows[0]["BottomText"]
+
+    def test_missing_year_shows_unknown(self):
+        release = {
+            "id": 789,
+            "artist": "Test Artist",
+            "title": "Test Album",
+            "discogs_folder": "Folder",
+        }
+        rows = self.service.generate_rows([release])
+        assert "[unknown]" in rows[0]["BottomText"]
+
     def test_empty_releases_list(self):
         rows = self.service.generate_rows([])
         assert rows == []

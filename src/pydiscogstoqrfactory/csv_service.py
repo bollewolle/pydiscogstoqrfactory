@@ -64,7 +64,8 @@ class CSVService:
         result = template_value
         result = result.replace("{artist}", str(release.get("artist", "")))
         result = result.replace("{title}", str(release.get("title", "")))
-        result = result.replace("{year}", str(release.get("year", "")))
+        year = release.get("year", "")
+        result = result.replace("{year}", str(year) if year and year != 0 else "unknown")
         result = result.replace("{discogs_folder}", str(release.get("discogs_folder", "")))
         result = result.replace("{url}", f"https://www.discogs.com/release/{release.get('id', '')}")
         result = result.replace("{filename}", str(release.get("id", "")))
