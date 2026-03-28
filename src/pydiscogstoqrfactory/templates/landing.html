@@ -10,18 +10,18 @@
     {% if authenticated %}
         <div class="options-grid">
             <a href="{{ url_for('collection.folders') }}" class="option-card">
-                <h2>Browse Folders</h2>
+                <h2>Browse by Folders</h2>
                 <p>Browse your Discogs collection folders and select releases to generate QR codes for.</p>
-            </a>
-
-            <a href="{{ url_for('collection.latest') }}" class="option-card">
-                <h2>Latest Additions</h2>
-                <p>Find releases recently added to your collection and generate QR codes for them.</p>
             </a>
 
             <a href="{{ url_for('collection.formats') }}" class="option-card">
                 <h2>Browse by Format</h2>
                 <p>Browse your collection by format, size, and description to find specific releases.</p>
+            </a>
+
+            <a href="{{ url_for('collection.latest') }}" class="option-card">
+                <h2>Latest Additions</h2>
+                <p>Find releases recently added to your collection and generate QR codes for them.</p>
             </a>
         </div>
     {% else %}

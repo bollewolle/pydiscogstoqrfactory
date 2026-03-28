@@ -16,7 +16,7 @@ class TestLanding:
             sess["username"] = "testuser"
 
         response = client.get("/")
-        assert b"Browse Folders" in response.data
+        assert b"Browse by Folders" in response.data
         assert b"Latest Additions" in response.data
 
 
