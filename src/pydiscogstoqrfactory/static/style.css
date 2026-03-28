@@ -292,6 +292,7 @@ a:hover {
     text-align: left;
     border-bottom: 1px solid #e5e7eb;
     font-size: 0.875rem;
+    white-space: pre-line;
 }
 
 .releases-table th, .csv-table th {
@@ -308,6 +309,12 @@ a:hover {
 .table-scroll {
     overflow-x: auto;
     margin-bottom: 1rem;
+}
+
+/* CSV BottomText column */
+.csv-table td.col-bottomtext,
+.csv-table th.col-bottomtext {
+    min-width: 300px;
 }
 
 /* CSV edit table */
@@ -352,6 +359,71 @@ a:hover {
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 0.9rem;
+}
+
+/* Settings */
+.settings-section {
+    background: #fff;
+    padding: 1.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.settings-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.settings-help {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+}
+
+.field-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.field-buttons label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-right: 0.25rem;
+}
+
+.settings-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+    margin-bottom: 0.75rem;
+}
+
+.settings-preview {
+    margin-bottom: 0.75rem;
+}
+
+.settings-preview label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.preview-box {
+    padding: 0.75rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    min-height: 2.5rem;
 }
 
 /* Empty state */

@@ -13,7 +13,7 @@ from flask import (
 
 from ..csv_service import CSVService
 from ..extensions import db
-from ..models import ProcessedRelease
+from ..models import ProcessedRelease, UserSettings
 
 export_bp = Blueprint("export", __name__, url_prefix="/export")
 
@@ -37,7 +37,16 @@ def preview():
         return redirect(url_for("collection.landing"))
 
     csv_service = _get_csv_service()
-    rows = csv_service.generate_rows(releases)
+
+    # Use custom BottomText template if the user has one
+    username = session.get("username", "")
+    bottom_text = None
+    if username:
+        settings = UserSettings.query.filter_by(username=username).first()
+        if settings:
+            bottom_text = settings.bottom_text_template
+
+    rows = csv_service.generate_rows(releases, bottom_text_template=bottom_text)
 
     # Store in session for subsequent edit/download
     session["preview_releases"] = releases

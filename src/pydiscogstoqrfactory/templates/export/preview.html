@@ -11,7 +11,7 @@
         <thead>
             <tr>
                 {% for col in header %}
-                    <th>{{ col }}</th>
+                    <th{% if col == 'BottomText' %} class="col-bottomtext"{% endif %}>{{ col }}</th>
                 {% endfor %}
             </tr>
         </thead>
@@ -19,7 +19,7 @@
             {% for row in rows %}
             <tr>
                 {% for col in header %}
-                    <td>{{ row[col] }}</td>
+                    <td{% if col == 'BottomText' %} class="col-bottomtext"{% endif %}>{{ row[col] }}</td>
                 {% endfor %}
             </tr>
             {% endfor %}

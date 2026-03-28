@@ -40,3 +40,24 @@ class ProcessedRelease(db.Model):
 
     def __repr__(self):
         return f"<ProcessedRelease {self.discogs_release_id}: {self.artist} - {self.title}>"
+
+
+class UserSettings(db.Model):
+    __tablename__ = "user_settings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(255), unique=True, nullable=False)
+    bottom_text_template = db.Column(
+        db.Text,
+        nullable=False,
+        default="{artist} \u2013 {title} [{year}]\n{discogs_folder}",
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    def __repr__(self):
+        return f"<UserSettings {self.username}>"

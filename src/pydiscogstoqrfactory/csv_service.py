@@ -25,13 +25,22 @@ class CSVService:
     def header(self) -> list[str]:
         return list(self._header)
 
-    def generate_rows(self, releases: list[dict]) -> list[dict]:
-        """Generate CSV row dicts for each release by substituting template placeholders."""
+    def generate_rows(
+        self, releases: list[dict], bottom_text_template: str | None = None
+    ) -> list[dict]:
+        """Generate CSV row dicts for each release by substituting template placeholders.
+
+        If bottom_text_template is provided, it replaces the BottomText column's
+        template value (the content between quotes in the CSV template).
+        """
         rows = []
         for release in releases:
             row = {}
             for col_name, template_value in zip(self._header, self._template_row):
-                row[col_name] = self._substitute(template_value, release)
+                if col_name == "BottomText" and bottom_text_template is not None:
+                    row[col_name] = self._substitute(bottom_text_template, release)
+                else:
+                    row[col_name] = self._substitute(template_value, release)
             rows.append(row)
         return rows
 
@@ -69,4 +78,7 @@ class CSVService:
         result = result.replace("{discogs_folder}", str(release.get("discogs_folder", "")))
         result = result.replace("{url}", f"https://www.discogs.com/release/{release.get('id', '')}")
         result = result.replace("{filename}", str(release.get("id", "")))
+        result = result.replace("{format_name}", str(release.get("format_name", "")))
+        result = result.replace("{format_size}", str(release.get("format_size", "")))
+        result = result.replace("{format_descriptions}", str(release.get("format_descriptions", "")))
         return result

@@ -36,6 +36,9 @@ def sample_releases():
             "discogs_folder": 'Vinyl - 12" - Albums',
             "url": "https://www.discogs.com/release/35410036",
             "date_added": "2025-01-15T10:00:00-08:00",
+            "format_name": "Vinyl",
+            "format_size": '12"',
+            "format_descriptions": "LP, Album",
         },
         {
             "id": 35642734,
@@ -45,6 +48,9 @@ def sample_releases():
             "discogs_folder": 'Vinyl - 12" - Albums',
             "url": "https://www.discogs.com/release/35642734",
             "date_added": "2025-02-10T10:00:00-08:00",
+            "format_name": "Vinyl",
+            "format_size": '12"',
+            "format_descriptions": "LP, Album",
         },
         {
             "id": 6399871,
@@ -54,5 +60,8 @@ def sample_releases():
             "discogs_folder": 'Vinyl - 10" - EPs',
             "url": "https://www.discogs.com/release/6399871",
             "date_added": "2024-12-01T10:00:00-08:00",
+            "format_name": "Vinyl",
+            "format_size": '10"',
+            "format_descriptions": "EP",
         },
     ]

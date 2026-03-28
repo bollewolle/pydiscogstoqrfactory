@@ -83,6 +83,23 @@ class TestIsSize:
         assert DiscogsService._is_size("") is False
 
 
+class TestInferSize:
+    def test_explicit_size(self):
+        assert DiscogsService._infer_size(['12"', "LP", "Album"]) == '12"'
+
+    def test_infer_from_lp(self):
+        assert DiscogsService._infer_size(["LP", "Album"]) == '12"'
+
+    def test_no_size_no_inference(self):
+        assert DiscogsService._infer_size(["Album"]) == ""
+
+    def test_explicit_takes_precedence(self):
+        assert DiscogsService._infer_size(['7"', "LP"]) == '7"'
+
+    def test_empty_descriptions(self):
+        assert DiscogsService._infer_size([]) == ""
+
+
 class TestGetCollectionFormats:
     def setup_method(self):
         _collection_cache.clear()
@@ -184,10 +201,30 @@ class TestGetFormatSizes:
         assert result[1]["size"] == '7"'
         assert result[1]["count"] == 1
 
-    def test_includes_unknown_size(self):
+    def test_inferred_size_from_lp(self):
         items = [
             self._make_item([{"name": "Vinyl", "descriptions": ['12"', "LP"]}]),
             self._make_item([{"name": "Vinyl", "descriptions": ["LP", "Album"]}]),
+        ]
+        user = MagicMock()
+        folder = MagicMock()
+        folder.id = 0
+        folder.releases = items
+        user.collection_folders = [folder]
+
+        with patch.object(self.service, "client") as mock_client:
+            mock_client.user.return_value = user
+            result = self.service.get_format_sizes("testuser", "Vinyl")
+
+        # Both should count as 12" (one explicit, one inferred from LP)
+        assert len(result) == 1
+        assert result[0]["size"] == '12"'
+        assert result[0]["count"] == 2
+
+    def test_includes_unknown_size(self):
+        items = [
+            self._make_item([{"name": "Vinyl", "descriptions": ['12"', "LP"]}]),
+            self._make_item([{"name": "Vinyl", "descriptions": ["Single"]}]),
         ]
         user = MagicMock()
         folder = MagicMock()
@@ -305,9 +342,32 @@ class TestGetReleasesByFormat:
                 "testuser", "Vinyl", size="Unknown"
             )
 
+        # Only release 3 has no size (LP infers 12" for release 2)
+        assert len(releases) == 1
+        assert releases[0]["id"] == 3
+
+    def test_inferred_size_matches_filter(self):
+        items = [
+            self._make_item(1, [{"name": "Vinyl", "descriptions": ['12"', "LP"]}]),
+            self._make_item(2, [{"name": "Vinyl", "descriptions": ["LP", "Album"]}]),
+            self._make_item(3, [{"name": "Vinyl", "descriptions": ['7"', "Single"]}]),
+        ]
+        user = MagicMock()
+        folder = MagicMock()
+        folder.id = 0
+        folder.releases = items
+        user.collection_folders = [folder]
+
+        with patch.object(self.service, "client") as mock_client:
+            mock_client.user.return_value = user
+            releases, descs = self.service.get_releases_by_format(
+                "testuser", "Vinyl", size='12"'
+            )
+
+        # Both release 1 (explicit 12") and release 2 (inferred from LP)
         assert len(releases) == 2
-        assert releases[0]["id"] == 2
-        assert releases[1]["id"] == 3
+        assert releases[0]["id"] == 1
+        assert releases[1]["id"] == 2
 
     def test_filters_by_description(self):
         items = [

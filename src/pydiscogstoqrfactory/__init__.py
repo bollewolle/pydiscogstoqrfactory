@@ -51,10 +51,12 @@ def create_app(config_class=None):
     from .blueprints.auth import auth_bp
     from .blueprints.collection import collection_bp
     from .blueprints.export import export_bp
+    from .blueprints.settings import settings_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(collection_bp)
     app.register_blueprint(export_bp)
+    app.register_blueprint(settings_bp)
 
     # Register error handlers
     @app.errorhandler(500)

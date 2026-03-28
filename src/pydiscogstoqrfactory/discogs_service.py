@@ -157,7 +157,7 @@ class DiscogsService:
                     format_counts[name] = {"name": name, "count": 0, "has_sizes": False}
                 format_counts[name]["count"] += 1
                 descriptions = fmt.get("descriptions", [])
-                if any(self._is_size(d) for d in descriptions):
+                if self._infer_size(descriptions):
                     format_counts[name]["has_sizes"] = True
 
         return sorted(format_counts.values(), key=lambda f: f["count"], reverse=True)
@@ -172,10 +172,10 @@ class DiscogsService:
             for fmt in item["formats"]:
                 if fmt.get("name") != format_name:
                     continue
-                sizes_found = [d for d in fmt.get("descriptions", []) if self._is_size(d)]
-                if sizes_found:
-                    for s in sizes_found:
-                        size_counts[s] = size_counts.get(s, 0) + 1
+                descriptions = fmt.get("descriptions", [])
+                inferred = self._infer_size(descriptions)
+                if inferred:
+                    size_counts[inferred] = size_counts.get(inferred, 0) + 1
                 else:
                     unknown_count += 1
 
@@ -211,10 +211,10 @@ class DiscogsService:
                 if fmt.get("name") != format_name:
                     continue
                 descriptions = fmt.get("descriptions", [])
-                has_size = any(self._is_size(d) for d in descriptions)
-                if size == "Unknown" and has_size:
+                inferred = self._infer_size(descriptions)
+                if size == "Unknown" and inferred:
                     continue
-                if size and size != "Unknown" and size not in descriptions:
+                if size and size != "Unknown" and inferred != size:
                     continue
                 non_size = [d for d in descriptions if not self._is_size(d)]
                 all_descriptions.update(non_size)
@@ -225,10 +225,27 @@ class DiscogsService:
 
         return releases, sorted(all_descriptions)
 
+    # Descriptions that imply a 12" size when no explicit size is present
+    _SIZE_INFERENCES: dict[str, str] = {
+        "LP": '12"',
+    }
+
     @staticmethod
     def _is_size(description: str) -> bool:
         """Check if a description is a physical size (e.g. '12\"', '7\"')."""
         return bool(re.match(r'^\d+"$', description))
+
+    @classmethod
+    def _infer_size(cls, descriptions: list[str]) -> str:
+        """Determine the size from descriptions, inferring from known types if needed."""
+        explicit = [d for d in descriptions if cls._is_size(d)]
+        if explicit:
+            return explicit[0]
+        non_size = [d for d in descriptions if not cls._is_size(d)]
+        for desc in non_size:
+            if desc in cls._SIZE_INFERENCES:
+                return cls._SIZE_INFERENCES[desc]
+        return ""
 
     def _normalize_release(self, item, folder_name: str) -> dict:
         """Normalize a collection item into a flat dict."""
@@ -237,6 +254,20 @@ class DiscogsService:
         date_added = getattr(item, "date_added", "")
         if hasattr(date_added, "isoformat"):
             date_added = date_added.isoformat()
+
+        # Extract format info from the first format entry
+        formats = getattr(release, "formats", None) or []
+        format_name = ""
+        format_size = ""
+        format_descriptions = ""
+        if formats:
+            fmt = formats[0]
+            format_name = fmt.get("name", "")
+            descs = fmt.get("descriptions", [])
+            non_sizes = [d for d in descs if not self._is_size(d)]
+            format_size = self._infer_size(descs)
+            format_descriptions = ", ".join(non_sizes)
+
         return {
             "id": release.id,
             "artist": artist,
@@ -245,6 +276,9 @@ class DiscogsService:
             "discogs_folder": folder_name,
             "url": f"https://www.discogs.com/release/{release.id}",
             "date_added": str(date_added) if date_added else "",
+            "format_name": format_name,
+            "format_size": format_size,
+            "format_descriptions": format_descriptions,
         }
 
     @staticmethod

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<h1>Settings</h1>
+<p><a href="{{ url_for('collection.landing') }}">&larr; Back to Home</a></p>
+
+<form method="post" action="{{ url_for('settings.save') }}" id="settings-form">
+    <div class="settings-section">
+        <h2>BottomText Template</h2>
+        <p class="settings-help">
+            Configure what text appears below the QR code. Click the field buttons to insert
+            placeholders. Use "New Line" to put content on a separate line.
+        </p>
+
+        <div class="field-buttons">
+            <label>Available fields:</label>
+            <button type="button" class="btn btn-sm field-btn" data-field="{artist}">Artist</button>
+            <button type="button" class="btn btn-sm field-btn" data-field="{title}">Title</button>
+            <button type="button" class="btn btn-sm field-btn" data-field="{year}">Year</button>
+            <button type="button" class="btn btn-sm field-btn" data-field="{discogs_folder}">Folder</button>
+            <button type="button" class="btn btn-sm field-btn" data-field="{format_name}">Format</button>
+            <button type="button" class="btn btn-sm field-btn" data-field="{format_size}">Size</button>
+            <button type="button" class="btn btn-sm field-btn" data-field="{format_descriptions}">Description</button>
+            <button type="button" class="btn btn-sm field-btn" data-field="&#10;" id="newline-btn">New Line</button>
+        </div>
+
+        <textarea name="bottom_text_template" id="bottom-text-input" rows="4"
+                  class="settings-textarea">{{ bottom_text }}</textarea>
+
+        <div class="settings-preview">
+            <label>Preview:</label>
+            <div id="bottom-text-preview" class="preview-box"></div>
+        </div>
+
+        <p class="settings-help">
+            Example: for a Vinyl 12" LP Album by "SOHN" called "Albadas" from 2025 in folder "Vinyl - 12\" - Albums",
+            the placeholders resolve to: Artist = SOHN, Title = Albadas, Year = 2025,
+            Folder = Vinyl - 12" - Albums, Format = Vinyl, Size = 12", Description = LP, Album
+        </p>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+        <button type="button" class="btn btn-sm" id="reset-default-btn">Reset to Default</button>
+    </div>
+</form>
+
+<script>
+(function() {
+    var textarea = document.getElementById('bottom-text-input');
+    var preview = document.getElementById('bottom-text-preview');
+    var defaultText = {{ default_bottom_text | tojson }};
+
+    var sampleData = {
+        '{artist}': 'SOHN',
+        '{title}': 'Albadas',
+        '{year}': '2025',
+        '{discogs_folder}': 'Vinyl - 12" - Albums',
+        '{format_name}': 'Vinyl',
+        '{format_size}': '12"',
+        '{format_descriptions}': 'LP, Album'
+    };
+
+    function updatePreview() {
+        var text = textarea.value;
+        for (var key in sampleData) {
+            text = text.split(key).join(sampleData[key]);
+        }
+        preview.innerHTML = '';
+        text.split('\n').forEach(function(line, i) {
+            if (i > 0) preview.appendChild(document.createElement('br'));
+            preview.appendChild(document.createTextNode(line));
+        });
+    }
+
+    textarea.addEventListener('input', updatePreview);
+    updatePreview();
+
+    // Field buttons insert at cursor position
+    document.querySelectorAll('.field-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var field = btn.getAttribute('data-field');
+            var start = textarea.selectionStart;
+            var end = textarea.selectionEnd;
+            var val = textarea.value;
+            textarea.value = val.substring(0, start) + field + val.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start + field.length;
+            textarea.focus();
+            updatePreview();
+        });
+    });
+
+    // Reset to default
+    document.getElementById('reset-default-btn').addEventListener('click', function() {
+        textarea.value = defaultText;
+        updatePreview();
+    });
+})();
+</script>
+{% endblock %}

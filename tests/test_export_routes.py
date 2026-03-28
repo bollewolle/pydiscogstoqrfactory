@@ -1,6 +1,6 @@
 import json
 
-from pydiscogstoqrfactory.models import ProcessedRelease
+from pydiscogstoqrfactory.models import ProcessedRelease, UserSettings
 
 
 class TestPreview:
@@ -12,6 +12,24 @@ class TestPreview:
         assert response.status_code == 200
         assert b"CSV Preview" in response.data
         assert b"SOHN" in response.data
+
+    def test_preview_uses_custom_bottom_text(self, client, db, sample_releases):
+        settings = UserSettings(
+            username="testuser",
+            bottom_text_template="{title} [{format_name} {format_size}]",
+        )
+        db.session.add(settings)
+        db.session.commit()
+
+        with client.session_transaction() as sess:
+            sess["username"] = "testuser"
+
+        response = client.post(
+            "/export/preview",
+            data={"releases_data": json.dumps(sample_releases)},
+        )
+        assert response.status_code == 200
+        assert b'Albadas [Vinyl 12"' in response.data or b"Albadas [Vinyl 12&#34;" in response.data
 
     def test_preview_without_data_redirects(self, client):
         response = client.post("/export/preview", data={})
