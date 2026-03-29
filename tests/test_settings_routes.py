@@ -1,4 +1,4 @@
-from pydiscogstoqrfactory.models import UserSettings
+from pydiscogsqrcodegenerator.models import UserSettings
 
 
 class TestSettingsIndex:

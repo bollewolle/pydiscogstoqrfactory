@@ -1,6 +1,6 @@
 import json
 
-from pydiscogstoqrfactory.models import ProcessedRelease, UserSettings
+from pydiscogsqrcodegenerator.models import ProcessedRelease, UserSettings
 
 
 class TestPreview:
@@ -58,8 +58,8 @@ class TestDownload:
         assert "attachment" in response.headers.get("Content-Disposition", "")
 
     def test_download_with_rows_data(self, client, sample_releases):
-        from pydiscogstoqrfactory.csv_service import CSVService
-        from pydiscogstoqrfactory.config import TestConfig
+        from pydiscogsqrcodegenerator.csv_service import CSVService
+        from pydiscogsqrcodegenerator.config import TestConfig
 
         service = CSVService(TestConfig.CSV_TEMPLATE_PATH)
         rows = service.generate_rows(sample_releases)

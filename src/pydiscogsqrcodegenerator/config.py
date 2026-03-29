@@ -24,7 +24,7 @@ class BaseConfig:
     DISCOGS_CONSUMER_SECRET = os.environ.get("DISCOGS_CONSUMER_SECRET", "")
     DISCOGS_OAUTH_TOKEN = os.environ.get("DISCOGS_OAUTH_TOKEN", "")
     DISCOGS_OAUTH_TOKEN_SECRET = os.environ.get("DISCOGS_OAUTH_TOKEN_SECRET", "")
-    USERAGENT = os.environ.get("USERAGENT", "pyqrfactorydiscogs/1.0")
+    USERAGENT = os.environ.get("USERAGENT", "pydiscogsqrcodegenerator/1.0")
     FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5001")
 
     # CSV template

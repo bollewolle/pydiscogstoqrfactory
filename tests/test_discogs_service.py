@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from pydiscogstoqrfactory.discogs_service import DiscogsService, _collection_cache
+from pydiscogsqrcodegenerator.discogs_service import DiscogsService, _collection_cache
 
 
 class TestNormalizeRelease:

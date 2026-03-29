@@ -1,12 +1,12 @@
 from unittest.mock import MagicMock, patch
 
-from pydiscogstoqrfactory.models import OAuthToken
+from pydiscogsqrcodegenerator.models import OAuthToken
 
 
 class TestAuthLogin:
     def test_login_redirects_to_discogs(self, client):
         with patch(
-            "pydiscogstoqrfactory.blueprints.auth._get_discogs_service"
+            "pydiscogsqrcodegenerator.blueprints.auth._get_discogs_service"
         ) as mock_svc:
             service = MagicMock()
             service.get_authorize_url.return_value = (
@@ -22,7 +22,7 @@ class TestAuthLogin:
 
     def test_login_failure_flashes_error(self, client):
         with patch(
-            "pydiscogstoqrfactory.blueprints.auth._get_discogs_service"
+            "pydiscogsqrcodegenerator.blueprints.auth._get_discogs_service"
         ) as mock_svc:
             service = MagicMock()
             service.get_authorize_url.side_effect = Exception("API error")
@@ -50,7 +50,7 @@ class TestAuthCallback:
             sess["request_secret"] = "req_secret"
 
         with patch(
-            "pydiscogstoqrfactory.blueprints.auth._get_discogs_service"
+            "pydiscogsqrcodegenerator.blueprints.auth._get_discogs_service"
         ) as mock_svc:
             service = MagicMock()
             service.get_access_token.return_value = ("access_tok", "access_sec")

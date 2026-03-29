@@ -17,7 +17,7 @@ COPY templates/ templates/
 
 # Set environment variables
 ENV PYTHONPATH=src \
-    FLASK_APP=pydiscogstoqrfactory \
+    FLASK_APP=pydiscogsqrcodegenerator \
     FLASK_ENV=production
 
 EXPOSE 5001
@@ -25,4 +25,4 @@ EXPOSE 5001
 # Run with gunicorn for production
 RUN uv pip install gunicorn
 
-CMD ["uv", "run", "gunicorn", "--bind", "0.0.0.0:5001", "--workers", "2", "--preload", "pydiscogstoqrfactory:create_app()"]
+CMD ["uv", "run", "gunicorn", "--bind", "0.0.0.0:5001", "--workers", "2", "--preload", "pydiscogsqrcodegenerator:create_app()"]

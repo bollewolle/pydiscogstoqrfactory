@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from pydiscogstoqrfactory.config import TestConfig
-from pydiscogstoqrfactory.pdf_service import PDFService
+from pydiscogsqrcodegenerator.config import TestConfig
+from pydiscogsqrcodegenerator.pdf_service import PDFService
 
-LOGO_PATH = Path(__file__).parent.parent / "src" / "pydiscogstoqrfactory" / "static" / "discogs_logo.png"
+LOGO_PATH = Path(__file__).parent.parent / "src" / "pydiscogsqrcodegenerator" / "static" / "discogs_logo.png"
 
 
 @pytest.fixture()

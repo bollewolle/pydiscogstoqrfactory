@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 import segno
-from fpdf import FPDF
+from fpdf import FPDF, ViewerPreferences
 from PIL import Image
 
 from .csv_service import CSVService
@@ -118,6 +118,7 @@ class PDFService:
 
         pdf = FPDF(unit="mm", format=(page_w, page_h))
         pdf.set_auto_page_break(auto=False)
+        pdf.viewer_preferences = ViewerPreferences(print_scaling="None")
 
         padding = 1  # mm padding inside sticker
         gap = 0.5  # mm between QR and text

@@ -23,7 +23,7 @@ class TestLanding:
 class TestFolders:
     def test_folders_redirects_when_unauthenticated(self, client):
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             mock_auth.return_value = None
             response = client.get("/collection/folders")
@@ -36,7 +36,7 @@ class TestFolders:
             sess["access_secret"] = "secret"
 
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             service = MagicMock()
             service.get_folders.return_value = [
@@ -87,7 +87,7 @@ class TestFolderReleases:
             sess["access_secret"] = "secret"
 
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             service = MagicMock()
             service.get_folder_releases.return_value = self._mock_releases()
@@ -106,7 +106,7 @@ class TestFolderReleases:
             sess["access_secret"] = "secret"
 
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             service = MagicMock()
             service.get_folder_releases.return_value = self._mock_releases()
@@ -122,7 +122,7 @@ class TestFolderReleases:
 class TestFormats:
     def test_formats_redirects_when_unauthenticated(self, client):
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             mock_auth.return_value = None
             response = client.get("/collection/formats")
@@ -135,7 +135,7 @@ class TestFormats:
             sess["access_secret"] = "secret"
 
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             service = MagicMock()
             service.get_collection_formats.return_value = [
@@ -159,7 +159,7 @@ class TestFormatSizes:
             sess["access_secret"] = "secret"
 
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             service = MagicMock()
             service.get_format_sizes.return_value = [
@@ -180,7 +180,7 @@ class TestFormatSizes:
             sess["access_secret"] = "secret"
 
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             service = MagicMock()
             service.get_format_sizes.return_value = []
@@ -197,7 +197,7 @@ class TestFormatSizes:
             sess["access_secret"] = "secret"
 
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             mock_auth.return_value = MagicMock()
             response = client.get("/collection/formats/sizes")
@@ -236,7 +236,7 @@ class TestFormatReleases:
             sess["access_secret"] = "secret"
 
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             service = MagicMock()
             service.get_releases_by_format.return_value = self._mock_releases_and_descs()
@@ -258,7 +258,7 @@ class TestFormatReleases:
             sess["access_secret"] = "secret"
 
         with patch(
-            "pydiscogstoqrfactory.blueprints.collection.get_authenticated_service"
+            "pydiscogsqrcodegenerator.blueprints.collection.get_authenticated_service"
         ) as mock_auth:
             mock_auth.return_value = MagicMock()
             response = client.get("/collection/formats/releases")

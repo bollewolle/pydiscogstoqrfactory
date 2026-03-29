@@ -2,7 +2,7 @@ import csv
 import io
 from pathlib import Path
 
-from pydiscogstoqrfactory.csv_service import CSVService
+from pydiscogsqrcodegenerator.csv_service import CSVService
 
 
 TEMPLATE_PATH = Path(__file__).parent.parent / "templates" / "qrfactory_discogs_collection_template.csv"

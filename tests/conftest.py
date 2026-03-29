@@ -1,8 +1,8 @@
 import pytest
 
-from pydiscogstoqrfactory import create_app
-from pydiscogstoqrfactory.config import TestConfig
-from pydiscogstoqrfactory.extensions import db as _db
+from pydiscogsqrcodegenerator import create_app
+from pydiscogsqrcodegenerator.config import TestConfig
+from pydiscogsqrcodegenerator.extensions import db as _db
 
 
 @pytest.fixture()

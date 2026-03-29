@@ -145,7 +145,7 @@ services:
       # Optional: add these if you have OAuth tokens
       # - DISCOGS_OAUTH_TOKEN=your_oauth_token
       # - DISCOGS_OAUTH_TOKEN_SECRET=your_oauth_token_secret
-      - USERAGENT=pydiscogstoqrfactory/1.0
+      - USERAGENT=pydiscogsqrcodegenerator/1.0
     volumes:
       - discogs-qr-data:/app/instance
     restart: unless-stopped
@@ -204,13 +204,13 @@ uv run pytest
 With coverage:
 
 ```bash
-uv run pytest --cov=pydiscogstoqrfactory
+uv run pytest --cov=pydiscogsqrcodegenerator
 ```
 
 ### Project structure
 
 ```
-src/pydiscogstoqrfactory/
+src/pydiscogsqrcodegenerator/
 ├── __init__.py            # App factory
 ├── config.py              # Configuration classes
 ├── extensions.py          # Flask extensions

@@ -1,6 +1,6 @@
 import json
 
-from pydiscogstoqrfactory.models import StickerLayout, UserSettings
+from pydiscogsqrcodegenerator.models import StickerLayout, UserSettings
 
 
 class TestPreviewPdf:
