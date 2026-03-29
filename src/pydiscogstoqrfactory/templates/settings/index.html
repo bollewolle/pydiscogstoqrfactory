@@ -79,52 +79,62 @@
     </p>
 
     {% for layout in layouts %}
-    <div class="layout-card">
-        <form method="post" action="{{ url_for('settings.edit_layout', layout_id=layout.id) }}">
-            <div class="layout-header">
-                <strong>{{ layout.name }}</strong>
-                <span class="badge">{{ layout.cols }}&times;{{ layout.rows }} = {{ layout.stickers_per_page }} stickers/page</span>
-            </div>
-            <div class="layout-fields">
-                <label>Name <input type="text" name="name" value="{{ layout.name }}" class="layout-input"></label>
-                <label>Page W <input type="number" name="page_width" value="{{ layout.page_width }}" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Page H <input type="number" name="page_height" value="{{ layout.page_height }}" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Sticker W <input type="number" name="sticker_width" value="{{ layout.sticker_width }}" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Sticker H <input type="number" name="sticker_height" value="{{ layout.sticker_height }}" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Margin T <input type="number" name="margin_top" value="{{ layout.margin_top }}" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Margin L <input type="number" name="margin_left" value="{{ layout.margin_left }}" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Space X <input type="number" name="spacing_x" value="{{ layout.spacing_x }}" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Space Y <input type="number" name="spacing_y" value="{{ layout.spacing_y }}" step="0.1" class="layout-input layout-input-sm"></label>
-            </div>
-            <div class="layout-actions">
-                <button type="submit" class="btn btn-sm btn-primary">Update</button>
-        </form>
-                <form method="post" action="{{ url_for('settings.delete_layout', layout_id=layout.id) }}" class="inline-form">
-                    <button type="submit" class="btn btn-sm btn-danger"
-                            onclick="return confirm('Delete this layout?')">Delete</button>
+    <div class="layout-card" data-layout-card>
+        <div class="layout-card-body">
+            <div class="layout-card-form">
+                <form method="post" action="{{ url_for('settings.edit_layout', layout_id=layout.id) }}">
+                    <div class="layout-header">
+                        <strong>{{ layout.name }}</strong>
+                        <span class="badge layout-badge" data-layout-badge>{{ layout.cols }}&times;{{ layout.rows }} = {{ layout.stickers_per_page }} stickers/page</span>
+                    </div>
+                    <div class="layout-fields">
+                        <label>Name <input type="text" name="name" value="{{ layout.name }}" class="layout-input"></label>
+                        <label>Page W <input type="number" name="page_width" value="{{ layout.page_width }}" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Page H <input type="number" name="page_height" value="{{ layout.page_height }}" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Sticker W <input type="number" name="sticker_width" value="{{ layout.sticker_width }}" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Sticker H <input type="number" name="sticker_height" value="{{ layout.sticker_height }}" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Margin T <input type="number" name="margin_top" value="{{ layout.margin_top }}" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Margin L <input type="number" name="margin_left" value="{{ layout.margin_left }}" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Space X <input type="number" name="spacing_x" value="{{ layout.spacing_x }}" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Space Y <input type="number" name="spacing_y" value="{{ layout.spacing_y }}" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                    </div>
+                    <div class="layout-actions">
+                        <button type="submit" class="btn btn-sm btn-primary">Update</button>
                 </form>
+                        <form method="post" action="{{ url_for('settings.delete_layout', layout_id=layout.id) }}" class="inline-form">
+                            <button type="submit" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Delete this layout?')">Delete</button>
+                        </form>
+                    </div>
             </div>
+            <div class="layout-thumb" data-layout-thumb></div>
+        </div>
     </div>
     {% endfor %}
 
-    <div class="layout-card layout-card-new">
-        <form method="post" action="{{ url_for('settings.add_layout') }}">
-            <h3>Add New Layout</h3>
-            <div class="layout-fields">
-                <label>Name <input type="text" name="name" value="New Layout" class="layout-input" required></label>
-                <label>Page W <input type="number" name="page_width" value="210" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Page H <input type="number" name="page_height" value="297" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Sticker W <input type="number" name="sticker_width" value="50" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Sticker H <input type="number" name="sticker_height" value="50" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Margin T <input type="number" name="margin_top" value="10" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Margin L <input type="number" name="margin_left" value="10" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Space X <input type="number" name="spacing_x" value="5" step="0.1" class="layout-input layout-input-sm"></label>
-                <label>Space Y <input type="number" name="spacing_y" value="5" step="0.1" class="layout-input layout-input-sm"></label>
+    <div class="layout-card layout-card-new" data-layout-card>
+        <div class="layout-card-body">
+            <div class="layout-card-form">
+                <form method="post" action="{{ url_for('settings.add_layout') }}">
+                    <h3>Add New Layout</h3>
+                    <div class="layout-fields">
+                        <label>Name <input type="text" name="name" value="New Layout" class="layout-input" required></label>
+                        <label>Page W <input type="number" name="page_width" value="210" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Page H <input type="number" name="page_height" value="297" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Sticker W <input type="number" name="sticker_width" value="50" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Sticker H <input type="number" name="sticker_height" value="50" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Margin T <input type="number" name="margin_top" value="10" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Margin L <input type="number" name="margin_left" value="10" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Space X <input type="number" name="spacing_x" value="5" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                        <label>Space Y <input type="number" name="spacing_y" value="5" step="0.1" class="layout-input layout-input-sm" data-layout-field></label>
+                    </div>
+                    <div class="layout-actions">
+                        <button type="submit" class="btn btn-sm btn-success">Add Layout</button>
+                    </div>
+                </form>
             </div>
-            <div class="layout-actions">
-                <button type="submit" class="btn btn-sm btn-success">Add Layout</button>
-            </div>
-        </form>
+            <div class="layout-thumb" data-layout-thumb></div>
+        </div>
     </div>
 </div>
 
@@ -177,6 +187,66 @@
     document.getElementById('reset-default-btn').addEventListener('click', function() {
         textarea.value = defaultText;
         updatePreview();
+    });
+
+    // Layout thumbnail rendering
+    function renderLayoutThumb(card) {
+        var thumb = card.querySelector('[data-layout-thumb]');
+        var badge = card.querySelector('[data-layout-badge]');
+        if (!thumb) return;
+
+        var val = function(name) {
+            var input = card.querySelector('input[name="' + name + '"]');
+            return input ? parseFloat(input.value) || 0 : 0;
+        };
+
+        var pw = val('page_width'), ph = val('page_height');
+        var sw = val('sticker_width'), sh = val('sticker_height');
+        var mt = val('margin_top'), ml = val('margin_left');
+        var sx = val('spacing_x'), sy = val('spacing_y');
+
+        if (pw <= 0 || ph <= 0 || sw <= 0 || sh <= 0) {
+            thumb.innerHTML = '';
+            return;
+        }
+
+        var cols = Math.max(1, Math.floor((pw - ml) / (sw + sx)));
+        var rows = Math.max(1, Math.floor((ph - mt) / (sh + sy)));
+        var total = cols * rows;
+
+        if (badge) {
+            badge.textContent = cols + '\u00d7' + rows + ' = ' + total + ' stickers/page';
+        }
+
+        // Scale so the thumbnail fits within max dimensions
+        var maxH = 140;
+        var scale = maxH / ph;
+        var thumbW = pw * scale;
+        var thumbH = ph * scale;
+
+        var html = '<div class="layout-thumb-page" style="width:' + thumbW + 'px;height:' + thumbH + 'px;">';
+
+        for (var r = 0; r < rows; r++) {
+            for (var c = 0; c < cols; c++) {
+                var left = (ml + c * (sw + sx)) * scale;
+                var top = (mt + r * (sh + sy)) * scale;
+                var w = sw * scale;
+                var h = sh * scale;
+                html += '<div class="layout-thumb-sticker" style="left:' + left + 'px;top:' + top + 'px;width:' + w + 'px;height:' + h + 'px;"></div>';
+            }
+        }
+
+        html += '</div>';
+        thumb.innerHTML = html;
+    }
+
+    // Render all thumbnails on load
+    document.querySelectorAll('[data-layout-card]').forEach(function(card) {
+        renderLayoutThumb(card);
+        // Live update on input change
+        card.querySelectorAll('[data-layout-field]').forEach(function(input) {
+            input.addEventListener('input', function() { renderLayoutThumb(card); });
+        });
     });
 })();
 </script>

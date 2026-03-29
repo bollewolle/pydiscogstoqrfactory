@@ -464,6 +464,17 @@ a:hover {
     margin-bottom: 0.75rem;
 }
 
+.layout-card-body {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
+.layout-card-form {
+    flex: 1;
+    min-width: 0;
+}
+
 .layout-card-new {
     border-style: dashed;
 }
@@ -478,6 +489,25 @@ a:hover {
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
+}
+
+.layout-thumb {
+    flex-shrink: 0;
+}
+
+.layout-thumb-page {
+    position: relative;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.layout-thumb-sticker {
+    position: absolute;
+    background: #dbeafe;
+    border: 1px solid #93c5fd;
+    border-radius: 1px;
 }
 
 .layout-fields {
