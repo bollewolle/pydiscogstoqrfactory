@@ -1,0 +1,17 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8721:5001"
+    env_file:
+      - .env
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - FRONTEND_URL=http://localhost:8721
+    volumes:
+      - app-data:/app/instance
+    restart: unless-stopped
+
+volumes:
+  app-data:

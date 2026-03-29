@@ -33,8 +33,8 @@ A web application that connects to the Discogs API to retrieve your record colle
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
-cd pydiscogstoqrfactory
+git clone https://github.com/bollewolle/pydiscogsqrcodegenerator.git
+cd pydiscogsqrcodegenerator
 ```
 
 ### 2. Set up environment variables
@@ -84,6 +84,63 @@ The app will be available at `http://localhost:5000`.
 5. **Export as PDF** — Click "Preview QR Code PDF" to see a page-by-page sticker preview matching your selected layout. Deactivate individual slots to skip already-used sticker positions. Click "Download QR Code PDF" to generate the printable PDF.
 
 6. **Export as QR Factory 3 CSV** — Click "Preview QR Factory 3 CSV" to see the generated CSV data. Optionally click "Edit Before Download" to modify individual fields. Click "Download QR Factory 3 CSV" to get the file, then import it into QR Factory 3.
+
+## Docker
+
+You can run the application using Docker Compose, which is the easiest way to get started without installing Python or uv locally.
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/) (included with Docker Desktop)
+- A [Discogs developer application](https://www.discogs.com/settings/developers) (for API credentials)
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/bollewolle/pydiscogsqrcodegenerator.git
+cd pydiscogsqrcodegenerator
+```
+
+### 2. Set up environment variables
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and add your Discogs API credentials:
+
+```env
+DISCOGS_CONSUMER_KEY=your_consumer_key
+DISCOGS_CONSUMER_SECRET=your_consumer_secret
+```
+
+### 3. Start the application
+
+```bash
+docker compose up -d
+```
+
+The app will be available at `http://localhost:8721`.
+
+### Stopping the application
+
+```bash
+docker compose down
+```
+
+### Persistent data
+
+The SQLite database and session files are stored in a Docker volume (`app-data`). Your data persists across container restarts. To completely reset the data:
+
+```bash
+docker compose down -v
+```
+
+### Rebuilding after updates
+
+```bash
+docker compose up -d --build
+```
 
 ## Development
 
