@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Collection Folders{% endblock %}
+
+{% block content %}
+<h1>Collection Folders</h1>
+{% set breadcrumbs = [
+    {"label": "Home", "url": url_for('collection.landing')},
+    {"label": "Folders"},
+] %}
+{% include "_breadcrumbs.html" %}
+
+<div class="folders-grid">
+    {% for folder in folders %}
+        <a href="{{ url_for('collection.folder_releases', folder_id=folder.id) }}" class="folder-card">
+            <h3>{{ folder.name }}</h3>
+            <span class="badge">{{ folder.count }} releases</span>
+        </a>
+    {% endfor %}
+</div>
+{% endblock %}

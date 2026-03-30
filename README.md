@@ -13,7 +13,7 @@ A web application that connects to the Discogs API to retrieve your record colle
 - **Flexible Selection** — Select individual releases, all releases, or filter by artist starting letter
 - **QR Code PDF Generation** — Generate printable PDF sticker sheets with QR codes featuring the Discogs logo overlay
 - **Configurable Sticker Layouts** — Define page size, sticker dimensions, margins, and spacing; includes standard layouts (Default A4, Avery L7120-25, Avery L7121-25) with visual preview
-- **Printer Offset Correction** — Compensate for printer origin offset with configurable top/left offsets; includes a downloadable test page PDF that visualises all layout dimensions for measuring with a ruler
+- **Printer Offset Correction** *(experimental)* — Compensate for printer origin offset with configurable top/left offsets; includes a downloadable test page PDF that visualises all layout dimensions for measuring with a ruler
 - **Sticker Slot Activation** — Deactivate individual sticker slots to reuse partially printed pages
 - **QR Factory 3 CSV Export** — Generate CSV files in the exact format expected by QR Factory 3, with preview and edit before downloading
 - **Customizable Text below QR Code** — Configure what text appears below the QR code via the Settings page, using any combination of artist, title, year, folder, format, size, and description

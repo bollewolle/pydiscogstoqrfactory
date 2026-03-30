@@ -66,42 +66,11 @@
         {% endif %}
     </div>
 
-    <div class="settings-section">
-        <h2>Printer Offset Correction <span class="badge badge-experimental">Experimental</span></h2>
-        <p class="settings-help">
-            <strong>Note:</strong> This feature is experimental and may not produce accurate results with all printers.
-        </p>
-        <p class="settings-help">
-            If your printed stickers don't align with the sticker sheet, your printer may have an origin offset.
-            Print a test page at 100% scale and measure the difference between the expected and actual margins.
-            Use positive values to shift content up (top) or left (left).
-            For example, if the top margin prints as 28mm but should be 26mm, set the top offset to 2.
-        </p>
-        <div class="layout-fields">
-            <label>Offset Top (mm) <input type="number" name="printer_offset_top" value="{{ printer_offset_top }}" step="0.1" class="layout-input layout-input-sm"></label>
-            <label>Offset Left (mm) <input type="number" name="printer_offset_left" value="{{ printer_offset_left }}" step="0.1" class="layout-input layout-input-sm"></label>
-        </div>
-    </div>
-
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">Save Settings</button>
         <button type="button" class="btn btn-sm" id="reset-default-btn">Reset to Default</button>
     </div>
 </form>
-
-<hr class="settings-divider">
-
-<div class="settings-section">
-    <h2>Print Test Page</h2>
-    <p class="settings-help">
-        Download a test page PDF for the active sticker layout. It shows all layout dimensions
-        (margins, sticker size, spacing) so you can print it at 100% scale and measure with a ruler
-        to determine the correct printer offset values. Make sure to save your settings first if you changed offset values.
-    </p>
-    <form method="post" action="{{ url_for('settings.test_page') }}">
-        <button type="submit" class="btn btn-sm"{% if not active_layout_id %} disabled title="Select an active layout first"{% endif %}>Download Test Page PDF</button>
-    </form>
-</div>
 
 <div class="settings-section">
     <h2>Sticker Layouts</h2>

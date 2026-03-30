@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}QR Factory 3 CSV Preview{% endblock %}
+
+{% block content %}
+<h1>QR Factory 3 CSV Preview</h1>
+{% include "_breadcrumbs.html" %}
+<p>{{ rows | length }} release(s) selected</p>
+
+<div class="table-scroll">
+    <table class="csv-table">
+        <thead>
+            <tr>
+                {% for col in header %}
+                    <th{% if col == 'BottomText' %} class="col-bottomtext"{% endif %}>{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                {% for col in header %}
+                    <td{% if col == 'BottomText' %} class="col-bottomtext"{% endif %}>{{ row[col] }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="form-actions">
+    <form method="post" action="{{ url_for('export.edit') }}" class="inline-form">
+        <button type="submit" class="btn btn-sm">Edit Before Download</button>
+    </form>
+
+    <form method="post" action="{{ url_for('export.download') }}" class="inline-form">
+        <button type="submit" class="btn btn-primary">Download QR Factory 3 CSV</button>
+    </form>
+
+    <form method="post" action="{{ url_for('export.mark_processed') }}" class="inline-form">
+        <input type="hidden" name="releases_data" value='{{ releases | tojson }}'>
+        <button type="submit" class="btn btn-sm btn-success">Mark as Processed &amp; Downloaded</button>
+    </form>
+</div>
+
+{% endblock %}

@@ -258,11 +258,6 @@ a:hover {
     color: #065f46;
 }
 
-.badge-experimental {
-    background: #fef3c7;
-    color: #92400e;
-}
-
 /* Controls */
 .controls {
     margin-bottom: 1rem;
@@ -376,14 +371,7 @@ a:hover {
     display: flex;
     gap: 0.5rem;
     margin-top: 1rem;
-    margin-bottom: 1.5rem;
     flex-wrap: wrap;
-}
-
-.settings-divider {
-    border: none;
-    border-top: 1px solid #e5e7eb;
-    margin: 1.5rem 0;
 }
 
 /* Date form */

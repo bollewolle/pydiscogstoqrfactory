@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ format_name }} - Sizes{% endblock %}
+
+{% block content %}
+<h1>{{ format_name }}</h1>
+{% set breadcrumbs = [
+    {"label": "Home", "url": url_for('collection.landing')},
+    {"label": "Formats", "url": url_for('collection.formats')},
+    {"label": format_name},
+] %}
+{% include "_breadcrumbs.html" %}
+
+<div class="folders-grid">
+    <a href="{{ url_for('collection.format_releases', name=format_name) }}" class="folder-card">
+        <h3>All Sizes</h3>
+    </a>
+    {% for item in sizes %}
+        <a href="{{ url_for('collection.format_releases', name=format_name, size=item.size) }}" class="folder-card">
+            <h3>{{ item.size }}</h3>
+            <span class="badge">{{ item.count }} releases</span>
+        </a>
+    {% endfor %}
+</div>
+{% endblock %}

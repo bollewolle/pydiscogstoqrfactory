@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Edit CSV{% endblock %}
+
+{% block content %}
+<h1>Edit CSV Data</h1>
+{% include "_breadcrumbs.html" %}
+<p>Edit the highlighted fields before downloading. Other fields are fixed QR code settings.</p>
+
+<form method="post" action="{{ url_for('export.download') }}" id="edit-form">
+    <input type="hidden" name="rows_data" id="rows-data">
+
+    <div class="table-scroll">
+        <table class="csv-table csv-edit-table">
+            <thead>
+                <tr>
+                    {% for col in header %}
+                        <th class="{% if col in editable_cols %}editable-header{% endif %}{% if col == 'BottomText' %} col-bottomtext{% endif %}">{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                {% set row_idx = loop.index0 %}
+                <tr>
+                    {% for col in header %}
+                        <td>
+                            {% if col in editable_cols %}
+                                <input type="text"
+                                       class="edit-input"
+                                       name="row_{{ row_idx }}_{{ col }}"
+                                       value="{{ row[col] }}"
+                                       data-row="{{ row_idx }}"
+                                       data-col="{{ col }}">
+                            {% else %}
+                                <span class="fixed-value">{{ row[col] }}</span>
+                                <input type="hidden"
+                                       name="row_{{ row_idx }}_{{ col }}"
+                                       value="{{ row[col] }}"
+                                       data-row="{{ row_idx }}"
+                                       data-col="{{ col }}">
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Download QR Factory 3 CSV</button>
+    </div>
+</form>
+
+<form method="post" action="{{ url_for('export.mark_processed') }}" class="inline-form">
+    <input type="hidden" name="releases_data" value='{{ releases | tojson }}'>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-sm btn-success">Mark as Processed &amp; Downloaded</button>
+    </div>
+</form>
+
+<script>
+    // Collect edited data into JSON before form submission
+    document.getElementById('edit-form').addEventListener('submit', function(e) {
+        const header = {{ header | tojson }};
+        const rowCount = {{ rows | length }};
+        const rows = [];
+
+        for (let i = 0; i < rowCount; i++) {
+            const row = {};
+            for (const col of header) {
+                const input = document.querySelector(`[name="row_${i}_${col}"]`);
+                if (input) {
+                    row[col] = input.value;
+                }
+            }
+            rows.push(row);
+        }
+
+        document.getElementById('rows-data').value = JSON.stringify(rows);
+    });
+</script>
+{% endblock %}

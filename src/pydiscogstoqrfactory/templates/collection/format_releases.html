@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{{ format_label }}{% endblock %}
+
+{% block content %}
+<h1>{{ format_label }}</h1>
+{% if size %}
+{% set breadcrumbs = [
+    {"label": "Home", "url": url_for('collection.landing')},
+    {"label": "Formats", "url": url_for('collection.formats')},
+    {"label": format_name, "url": url_for('collection.format_sizes', name=format_name)},
+    {"label": size},
+] %}
+{% else %}
+{% set breadcrumbs = [
+    {"label": "Home", "url": url_for('collection.landing')},
+    {"label": "Formats", "url": url_for('collection.formats')},
+    {"label": format_name},
+] %}
+{% endif %}
+{% include "_breadcrumbs.html" %}
+
+<!-- Sort controls -->
+<div class="controls">
+    <div class="sort-controls">
+        <label>Sort by:</label>
+        <a href="{{ url_for('collection.format_releases', name=format_name, size=size, desc=active_filters, sort='artist', order='asc', hide_processed='1' if hide_processed else '') }}"
+           class="btn btn-sm {% if sort == 'artist' and order == 'asc' %}btn-active{% endif %}">Artist A-Z</a>
+        <a href="{{ url_for('collection.format_releases', name=format_name, size=size, desc=active_filters, sort='artist', order='desc', hide_processed='1' if hide_processed else '') }}"
+           class="btn btn-sm {% if sort == 'artist' and order == 'desc' %}btn-active{% endif %}">Artist Z-A</a>
+        <a href="{{ url_for('collection.format_releases', name=format_name, size=size, desc=active_filters, sort='year', order='desc', hide_processed='1' if hide_processed else '') }}"
+           class="btn btn-sm {% if sort == 'year' and order == 'desc' %}btn-active{% endif %}">Newest First</a>
+        <a href="{{ url_for('collection.format_releases', name=format_name, size=size, desc=active_filters, sort='year', order='asc', hide_processed='1' if hide_processed else '') }}"
+           class="btn btn-sm {% if sort == 'year' and order == 'asc' %}btn-active{% endif %}">Oldest First</a>
+    </div>
+
+    {% if available_descriptions %}
+    <div class="filter-controls">
+        <label>Filter by:</label>
+        {% for desc in available_descriptions %}
+            {% if desc in active_filters %}
+                {% set new_filters = active_filters | reject('equalto', desc) | list %}
+                <a href="{{ url_for('collection.format_releases', name=format_name, size=size, desc=new_filters, sort=sort, order=order, hide_processed='1' if hide_processed else '') }}"
+                   class="btn btn-sm btn-active">{{ desc }}</a>
+            {% else %}
+                <a href="{{ url_for('collection.format_releases', name=format_name, size=size, desc=active_filters + [desc], sort=sort, order=order, hide_processed='1' if hide_processed else '') }}"
+                   class="btn btn-sm">{{ desc }}</a>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Hide processed toggle -->
+    <div class="filter-controls">
+        <a href="{{ url_for('collection.format_releases', name=format_name, size=size, desc=active_filters, sort=sort, order=order, hide_processed='' if hide_processed else '1') }}"
+           class="btn btn-sm {% if hide_processed %}btn-active{% endif %}">
+            {% if hide_processed %}Show All{% else %}Hide Processed{% endif %}
+        </a>
+    </div>
+</div>
+
+{% if releases %}
+<form id="releases-form" method="post" action="{{ url_for('export.preview') }}">
+    <input type="hidden" name="releases_data" id="releases-data">
+    {% if size %}
+    <input type="hidden" name="breadcrumbs" id="breadcrumbs-data"
+           value='{{ [
+               {"label": "Home", "url": url_for("collection.landing")},
+               {"label": "Formats", "url": url_for("collection.formats")},
+               {"label": format_name, "url": url_for("collection.format_sizes", name=format_name)},
+               {"label": size, "url": url_for("collection.format_releases", name=format_name, size=size)},
+           ] | tojson }}'>
+    {% else %}
+    <input type="hidden" name="breadcrumbs" id="breadcrumbs-data"
+           value='{{ [
+               {"label": "Home", "url": url_for("collection.landing")},
+               {"label": "Formats", "url": url_for("collection.formats")},
+               {"label": format_name, "url": url_for("collection.format_releases", name=format_name)},
+           ] | tojson }}'>
+    {% endif %}
+
+    <div class="selection-controls">
+        <button type="button" id="select-all" class="btn btn-sm">Select All</button>
+        <button type="button" id="deselect-all" class="btn btn-sm">Deselect All</button>
+        <span id="selection-count">0 selected</span>
+    </div>
+
+    <table class="releases-table">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="check-all"></th>
+                <th>Artist</th>
+                <th>Title</th>
+                <th>Year</th>
+                <th>Folder</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for release in releases %}
+            <tr>
+                <td>
+                    <input type="checkbox" class="release-check"
+                           value="{{ release.id }}"
+                           data-release='{{ release | tojson }}'
+                           {% if release.id in processed_ids %}data-processed="true"{% endif %}>
+                </td>
+                <td>{{ release.artist }}</td>
+                <td><a href="{{ release.url }}" target="_blank">{{ release.title }}</a></td>
+                <td>{{ release.year }}</td>
+                <td>{{ release.discogs_folder }}</td>
+                <td>
+                    {% if release.id in processed_ids %}
+                        <span class="badge badge-processed">Processed</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="preview-btn">Preview QR Factory 3 CSV</button>
+        <button type="button" class="btn btn-primary" id="preview-pdf-btn"
+                data-action="{{ url_for('export.preview_pdf') }}">Preview QR Code PDF</button>
+        <button type="button" class="btn btn-sm" id="unmark-processed-btn"
+                data-action="{{ url_for('export.unmark_processed') }}">Unmark Processed</button>
+    </div>
+</form>
+{% else %}
+<p class="empty-state">No releases found for this format.</p>
+{% endif %}
+{% endblock %}

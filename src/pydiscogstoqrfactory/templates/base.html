@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Discogs QR Code Generator{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="{{ url_for('collection.landing') }}">Discogs QR Code Generator</a>
+        </div>
+        <div class="nav-links">
+            {% if session.get('username') %}
+                <span class="nav-user">{{ session['username'] }}</span>
+                <a href="{{ url_for('settings.index') }}" class="btn btn-sm">Settings</a>
+                <form action="{{ url_for('export.clear_session') }}" method="post" class="inline-form">
+                    <button type="submit" class="btn btn-sm">Clear Session</button>
+                </form>
+                <form action="{{ url_for('auth.logout') }}" method="post" class="inline-form">
+                    <button type="submit" class="btn btn-sm btn-danger">Logout</button>
+                </form>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Login with Discogs</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

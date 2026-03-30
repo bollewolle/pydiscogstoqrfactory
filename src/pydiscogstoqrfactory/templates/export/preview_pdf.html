@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Preview QR Code PDF{% endblock %}
+
+{% block content %}
+<h1>Preview QR Code PDF</h1>
+{% include "_breadcrumbs.html" %}
+<p>{{ releases | length }} release(s) selected. Click a sticker slot to deactivate/activate it.
+    This is useful when reusing a partially printed sticker page — deactivate slots that have already been used
+    so that new QR codes are only printed on the remaining blank stickers, making the most of every page.</p>
+
+<div class="pdf-controls">
+    <div class="pdf-layout-info">
+        <label>Layout:</label>
+        <select id="layout-select" class="settings-select">
+            {% for l in layouts %}
+            <option value='{{ l | tojson }}' {% if l.id == layout.id %}selected{% endif %}>
+                {{ l.name }} ({{ l.cols }}&times;{{ l.rows }} = {{ l.stickers_per_page }}/page)
+            </option>
+            {% endfor %}
+        </select>
+        <span id="page-info" class="settings-help"></span>
+    </div>
+
+    <div class="pdf-selection-controls">
+        <button type="button" id="activate-all" class="btn btn-sm">Activate All</button>
+        <button type="button" id="deactivate-all" class="btn btn-sm">Deactivate All</button>
+        <span id="active-count"></span>
+    </div>
+</div>
+
+<div id="pages-container"></div>
+
+<form method="post" action="{{ url_for('export.generate_pdf') }}" id="pdf-form">
+    <input type="hidden" name="active_indices" id="active-indices">
+    <input type="hidden" name="layout_data" id="layout-data">
+    <input type="hidden" name="total_slots" id="total-slots">
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Download QR Code PDF</button>
+    </div>
+</form>
+
+<div class="form-actions">
+    <form method="post" action="{{ url_for('export.mark_processed') }}" class="inline-form">
+        <input type="hidden" name="releases_data" value='{{ releases | tojson }}'>
+        <button type="submit" class="btn btn-sm btn-success">Mark as Processed</button>
+    </form>
+</div>
+
+<script>
+(function() {
+    var releases = {{ releases | tojson }};
+    var bottomTexts = {{ bottom_texts | tojson }};
+
+    // Track which slot positions are active (true) or inactive (false)
+    // Slots are dynamically sized based on layout; we store by slot index
+    var slotActive = {};
+
+    var container = document.getElementById('pages-container');
+    var activeIndicesInput = document.getElementById('active-indices');
+    var layoutDataInput = document.getElementById('layout-data');
+    var totalSlotsInput = document.getElementById('total-slots');
+    var layoutSelect = document.getElementById('layout-select');
+    var pageInfo = document.getElementById('page-info');
+    var activeCount = document.getElementById('active-count');
+
+    function getLayout() {
+        return JSON.parse(layoutSelect.options[layoutSelect.selectedIndex].value);
+    }
+
+    function initSlots(totalSlots) {
+        // Preserve existing deactivated slots, default new ones to active
+        var newSlotActive = {};
+        for (var i = 0; i < totalSlots; i++) {
+            newSlotActive[i] = (slotActive[i] !== undefined) ? slotActive[i] : true;
+        }
+        slotActive = newSlotActive;
+    }
+
+    // Assign releases to active slots in order
+    function assignReleases(totalSlots) {
+        var assignments = {}; // slotIndex -> releaseIndex
+        var releaseIdx = 0;
+        for (var s = 0; s < totalSlots; s++) {
+            if (slotActive[s] && releaseIdx < releases.length) {
+                assignments[s] = releaseIdx;
+                releaseIdx++;
+            }
+        }
+        return assignments;
+    }
+
+    function renderGrid() {
+        var layout = getLayout();
+        var cols = layout.cols || 1;
+        var rows = layout.rows || 1;
+        var perPage = cols * rows;
+
+        // We need enough slots to fit all releases into active slots
+        // Calculate total pages needed: count active slots across pages until all releases placed
+        var totalSlots = calcTotalSlots(perPage, cols, rows);
+
+        initSlots(totalSlots);
+        var assignments = assignReleases(totalSlots);
+        var totalPages = Math.ceil(totalSlots / perPage) || 1;
+
+        var pageRatio = layout.page_width / layout.page_height;
+
+        container.innerHTML = '';
+
+        for (var p = 0; p < totalPages; p++) {
+            var pageDiv = document.createElement('div');
+            pageDiv.className = 'preview-page';
+
+            var pageLabel = document.createElement('div');
+            pageLabel.className = 'preview-page-label';
+            pageLabel.textContent = 'Page ' + (p + 1) + ' of ' + totalPages;
+            pageDiv.appendChild(pageLabel);
+
+            var grid = document.createElement('div');
+            grid.className = 'preview-page-grid';
+            grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+            grid.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
+            grid.style.aspectRatio = pageRatio;
+
+            for (var r = 0; r < rows; r++) {
+                for (var c = 0; c < cols; c++) {
+                    var slotIdx = p * perPage + r * cols + c;
+                    var cell = document.createElement('div');
+
+                    if (slotIdx < totalSlots) {
+                        var isActive = slotActive[slotIdx];
+                        var releaseIdx = assignments[slotIdx];
+                        var hasRelease = releaseIdx !== undefined;
+
+                        cell.className = 'sticker-card' + (isActive ? ' active' : '');
+                        cell.dataset.slot = slotIdx;
+
+                        if (isActive && hasRelease) {
+                            cell.innerHTML =
+                                '<div class="sticker-qr-placeholder">QR</div>' +
+                                '<div class="sticker-info">' +
+                                    '<div class="sticker-artist">' + escapeHtml(releases[releaseIdx].artist) + '</div>' +
+                                    '<div class="sticker-title">' + escapeHtml(releases[releaseIdx].title) + '</div>' +
+                                    '<div class="sticker-bottom-text">' + escapeHtml(bottomTexts[releaseIdx]) + '</div>' +
+                                '</div>' +
+                                '<div class="sticker-toggle-overlay">' +
+                                    '<span class="sticker-status">Active</span>' +
+                                '</div>';
+                        } else if (!isActive) {
+                            cell.innerHTML =
+                                '<div class="sticker-toggle-overlay">' +
+                                    '<span class="sticker-status">Inactive</span>' +
+                                '</div>';
+                        }
+
+                        (function(si, el) {
+                            el.addEventListener('click', function() {
+                                slotActive[si] = !slotActive[si];
+                                renderGrid();
+                            });
+                        })(slotIdx, cell);
+                    } else {
+                        cell.className = 'sticker-card sticker-empty';
+                    }
+
+                    grid.appendChild(cell);
+                }
+            }
+
+            pageDiv.appendChild(grid);
+            container.appendChild(pageDiv);
+        }
+
+        updateFormState(totalSlots);
+    }
+
+    function calcTotalSlots(perPage, cols, rows) {
+        // We need enough pages so that the number of active slots >= releases.length
+        // Iterate page by page, counting active slots
+        var activeNeeded = releases.length;
+        var activeFound = 0;
+        var page = 0;
+        while (activeFound < activeNeeded) {
+            var pageStart = page * perPage;
+            var anyActiveOnPage = false;
+            for (var s = 0; s < perPage; s++) {
+                var slotIdx = pageStart + s;
+                var isActive = (slotActive[slotIdx] !== undefined) ? slotActive[slotIdx] : true;
+                if (isActive) {
+                    activeFound++;
+                    anyActiveOnPage = true;
+                    if (activeFound >= activeNeeded) break;
+                }
+            }
+            page++;
+            // Safety: if a full page has no active slots, stop growing
+            if (!anyActiveOnPage) break;
+            // Safety: max 100 pages
+            if (page > 100) break;
+        }
+        return page * perPage;
+    }
+
+    function updateFormState(totalSlots) {
+        // Send active slot indices to the server
+        var activeSlots = [];
+        for (var i = 0; i < totalSlots; i++) {
+            if (slotActive[i]) activeSlots.push(i);
+        }
+        activeIndicesInput.value = JSON.stringify(activeSlots);
+        totalSlotsInput.value = totalSlots;
+
+        var layout = getLayout();
+        layoutDataInput.value = JSON.stringify(layout);
+
+        // Count how many releases are placed
+        var placed = Math.min(releases.length, activeSlots.length);
+        activeCount.textContent = placed + ' of ' + releases.length + ' placed';
+
+        var perPage = layout.stickers_per_page || 1;
+        var pages = Math.ceil(totalSlots / perPage) || 1;
+        pageInfo.textContent = pages + ' page(s)';
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str || ''));
+        return div.innerHTML;
+    }
+
+    document.getElementById('activate-all').addEventListener('click', function() {
+        for (var k in slotActive) slotActive[k] = true;
+        renderGrid();
+    });
+
+    document.getElementById('deactivate-all').addEventListener('click', function() {
+        for (var k in slotActive) slotActive[k] = false;
+        renderGrid();
+    });
+
+    layoutSelect.addEventListener('change', function() {
+        slotActive = {}; // reset slots on layout change
+        renderGrid();
+    });
+
+    renderGrid();
+})();
+</script>
+{% endblock %}

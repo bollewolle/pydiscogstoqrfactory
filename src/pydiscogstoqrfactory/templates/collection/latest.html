@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Latest Additions{% endblock %}
+
+{% block content %}
+<h1>Latest Additions</h1>
+{% set breadcrumbs = [
+    {"label": "Home", "url": url_for('collection.landing')},
+    {"label": "Latest Additions"},
+] %}
+{% include "_breadcrumbs.html" %}
+
+<form method="post" class="date-form">
+    <label for="since_date">Show releases added since:</label>
+    <input type="date" id="since_date" name="since_date"
+           value="{{ since_date | default('', true) }}" required>
+    <input type="hidden" name="hide_processed" value="{{ '1' if hide_processed else '' }}">
+    <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+{% if releases is not none and releases | length > 0 %}
+<div class="controls">
+    <div class="filter-controls">
+        <form method="post" style="display:inline;">
+            <input type="hidden" name="since_date" value="{{ since_date | default('', true) }}">
+            <input type="hidden" name="sort" value="{{ sort | default('date_added', true) }}">
+            <input type="hidden" name="order" value="{{ order | default('desc', true) }}">
+            <input type="hidden" name="hide_processed" value="{{ '' if hide_processed else '1' }}">
+            <button type="submit" class="btn btn-sm {% if hide_processed %}btn-active{% endif %}">
+                {% if hide_processed %}Show All{% else %}Hide Processed{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% if releases is not none %}
+    {% if releases | length == 0 %}
+        <p class="empty-state">No releases found since {{ since_date }}.</p>
+    {% else %}
+        <form id="releases-form" method="post" action="{{ url_for('export.preview') }}">
+            <input type="hidden" name="releases_data" id="releases-data">
+            <input type="hidden" name="breadcrumbs" id="breadcrumbs-data"
+                   value='{{ [
+                       {"label": "Home", "url": url_for("collection.landing")},
+                       {"label": "Latest Additions", "url": url_for("collection.latest")},
+                   ] | tojson }}'>
+
+            <div class="selection-controls">
+                <button type="button" id="select-all" class="btn btn-sm">Select All</button>
+                <button type="button" id="deselect-all" class="btn btn-sm">Deselect All</button>
+                <span id="selection-count">0 selected</span>
+            </div>
+
+            <table class="releases-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="check-all"></th>
+                        <th>Artist</th>
+                        <th>Title</th>
+                        <th>Year</th>
+                        <th>Folder</th>
+                        <th>Date Added</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for release in releases %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="release-check"
+                                   value="{{ release.id }}"
+                                   data-release='{{ release | tojson }}'
+                                   {% if release.id in processed_ids %}data-processed="true"{% endif %}>
+                        </td>
+                        <td>{{ release.artist }}</td>
+                        <td><a href="{{ release.url }}" target="_blank">{{ release.title }}</a></td>
+                        <td>{{ release.year }}</td>
+                        <td>{{ release.discogs_folder }}</td>
+                        <td>{{ release.date_added[:10] if release.date_added else '' }}</td>
+                        <td>
+                            {% if release.id in processed_ids %}
+                                <span class="badge badge-processed">Processed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="preview-btn">Preview QR Factory 3 CSV</button>
+                <button type="button" class="btn btn-primary" id="preview-pdf-btn"
+                        data-action="{{ url_for('export.preview_pdf') }}">Preview QR Code PDF</button>
+                <button type="button" class="btn btn-sm" id="unmark-processed-btn"
+                        data-action="{{ url_for('export.unmark_processed') }}">Unmark Processed</button>
+            </div>
+        </form>
+    {% endif %}
+{% endif %}
+{% endblock %}

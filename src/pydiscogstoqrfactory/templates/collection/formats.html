@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Browse by Format{% endblock %}
+
+{% block content %}
+<h1>Browse by Format</h1>
+{% set breadcrumbs = [
+    {"label": "Home", "url": url_for('collection.landing')},
+    {"label": "Formats"},
+] %}
+{% include "_breadcrumbs.html" %}
+
+{% if formats %}
+<div class="folders-grid">
+    {% for fmt in formats %}
+        <a href="{{ url_for('collection.format_sizes', name=fmt.name) }}" class="folder-card">
+            <h3>{{ fmt.name }}</h3>
+            <span class="badge">{{ fmt.count }} releases</span>
+        </a>
+    {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">No formats found in your collection.</p>
+{% endif %}
+{% endblock %}
