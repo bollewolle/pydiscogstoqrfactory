@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 
@@ -13,7 +14,8 @@ class BaseConfig:
 
     # Server-side sessions
     SESSION_TYPE = "cachelib"
-    SESSION_PERMANENT = False
+    SESSION_PERMANENT = True
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)
 
     # Max form/request size (large collections can produce big form payloads)
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB

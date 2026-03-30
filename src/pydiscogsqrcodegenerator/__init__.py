@@ -4,7 +4,7 @@ import traceback
 
 from cachelib import FileSystemCache
 from dotenv import load_dotenv
-from flask import Flask, Request, jsonify
+from flask import Flask, Request, jsonify, session
 
 from .config import get_config
 from .extensions import db, sess
@@ -57,6 +57,11 @@ def create_app(config_class=None):
     app.register_blueprint(collection_bp)
     app.register_blueprint(export_bp)
     app.register_blueprint(settings_bp)
+
+    # Refresh session expiry on each request so active users stay logged in
+    @app.before_request
+    def refresh_session():
+        session.permanent = True
 
     # Register error handlers
     @app.errorhandler(500)
