@@ -130,7 +130,7 @@ class PDFService:
         padding_top = 1  # mm padding from top of sticker
         padding_bottom = 3.5  # mm padding at bottom of sticker
         padding = 2.5  # mm padding on sides
-        gap = 0.5  # mm between QR and text
+        gap = 0.25  # mm between QR and text
         usable_w = sticker_w - 2 * padding
         usable_h = sticker_h - padding_top - padding_bottom
 
