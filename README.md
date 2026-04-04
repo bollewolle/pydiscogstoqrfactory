@@ -13,7 +13,7 @@ A web application that connects to the Discogs API to retrieve your record colle
 - **Flexible Selection** — Select individual releases, all releases, or filter by artist starting letter
 - **QR Code PDF Generation** — Generate printable PDF sticker sheets with QR codes featuring the Discogs logo overlay
 - **Configurable Sticker Layouts** — Define page size, sticker dimensions, margins, and spacing; includes standard layouts (Default A4, Avery L7120-25, Avery L7121-25) with visual preview
-- **Printer Offset Correction** *(experimental)* — Compensate for printer origin offset with configurable top/left offsets; includes a downloadable test page PDF that visualises all layout dimensions for measuring with a ruler
+- **Printer Offset Correction** _(experimental)_ — Compensate for printer origin offset with configurable top/left offsets; includes a downloadable test page PDF that visualises all layout dimensions for measuring with a ruler
 - **Sticker Slot Activation** — Deactivate individual sticker slots to reuse partially printed pages
 - **QR Factory 3 CSV Export** — Generate CSV files in the exact format expected by QR Factory 3, with preview and edit before downloading
 - **Customizable Text below QR Code** — Configure what text appears below the QR code via the Settings page, using any combination of artist, title, year, folder, format, size, and description
@@ -82,11 +82,32 @@ The app will be available at `http://localhost:5000`.
 
 4. **Settings (optional)** — Click "Settings" in the navbar to customize the text template below the QR code, manage sticker layouts, select the active layout, and configure printer offset correction.
 
-5. **Printer Calibration** *(optional, experimental)* — If printed stickers don't align with your sticker sheet, go to Settings and download the test page PDF. Print it at 100% scale (Actual size), measure the margins with a ruler, and enter the difference as offset values. For example, if the top margin measures 28mm but should be 26mm, set Offset Top to 2. Note: this feature is experimental and may not produce accurate results with all printers.
+5. **Printer Calibration** _(optional, experimental)_ — If printed stickers don't align with your sticker sheet, go to Settings and download the test page PDF. Print it at 100% scale (Actual size), measure the margins with a ruler, and enter the difference as offset values. For example, if the top margin measures 28mm but should be 26mm, set Offset Top to 2. Note: this feature is experimental and may not produce accurate results with all printers.
 
 6. **Export as PDF** — Click "Preview QR Code PDF" to see a page-by-page sticker preview matching your selected layout. Deactivate individual slots to skip already-used sticker positions. Click "Download QR Code PDF" to generate the printable PDF. Always print at "Actual size" (100%) — never use "Fit to page".
 
 7. **Export as QR Factory 3 CSV** — Click "Preview QR Factory 3 CSV" to see the generated CSV data. Optionally click "Edit Before Download" to modify individual fields. Click "Download QR Factory 3 CSV" to get the file, then import it into QR Factory 3.
+
+## Tips
+
+### Finding sticker sheet dimensions
+
+Microsoft Word has a built-in label database with dimensions for many sticker sheet brands and types (Avery, ULINE, etc.). You can use this to look up the exact dimensions for your sticker sheets:
+
+1. Open Microsoft Word and create a new blank document.
+2. Go to **Mailings** > **Labels** (on older Mac versions, this may be under **Tools** > **Labels**).
+3. Click **Options**, then select your label vendor and product number.
+4. Click **Details** to see the exact dimensions (margins, sticker size, spacing) — enter these values in the Sticker Layouts section on the Settings page.
+
+### Printing label outlines for alignment verification
+
+Before printing on actual sticker sheets, you can print a page with label outlines to verify alignment:
+
+1. Open Microsoft Word and create a new blank document.
+2. Go to **Mailings** > **Labels** (on older Mac versions: **Tools** > **Labels**), click **Options**, and select your label vendor and product number.
+3. Select the entire table and add visible borders (right-click > **Table Properties** > **Borders and Shading**).
+4. Print this page at 100% scale (Actual size).
+5. Use this printout to visually verify that your QR PDF stickers align with the label boundaries — either hold it up against a sticker sheet, or print a test QR PDF on the same page to check that QR codes and text fit within the borders.
 
 ## Docker
 

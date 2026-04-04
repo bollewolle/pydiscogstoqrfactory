@@ -108,6 +108,30 @@
     <p class="settings-help">
         Configure page and sticker dimensions (in mm) for QR PDF generation.
     </p>
+    <details class="settings-tip">
+        <summary>Tip: Finding dimensions for your sticker sheets</summary>
+        <p>
+            Microsoft Word has a built-in label database with dimensions for many brands and types
+            (Avery, ULINE, etc.). To look up your sticker sheet dimensions:
+        </p>
+        <ol>
+            <li>Open Microsoft Word and create a new blank document.</li>
+            <li>Go to <strong>Mailings</strong> &gt; <strong>Labels</strong>
+                (on older Mac versions: <strong>Tools</strong> &gt; <strong>Labels</strong>).</li>
+            <li>Click <strong>Options</strong>, then select your label vendor and product number.</li>
+            <li>Click <strong>Details</strong> to see the exact dimensions (margins, sticker size, spacing)
+                that you can enter in the layout fields below.</li>
+        </ol>
+        <p>
+            You can also use Word to print a sheet with label outlines for visual verification:
+            after selecting your label vendor and product number, click <strong>New Document</strong>
+            to generate a page with a table matching the label grid. Then select the table,
+            add visible borders (right-click &gt; <strong>Table Properties</strong> &gt;
+            <strong>Borders and Shading</strong>), and print it. You can then place this printout
+            under your actual sticker sheet to check alignment, or print a test QR PDF on top of it
+            to verify that QR codes and text fit within the sticker boundaries.
+        </p>
+    </details>
 
     {% for layout in layouts %}
     <div class="layout-card" data-layout-card>

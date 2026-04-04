@@ -422,6 +422,35 @@ a:hover {
     margin-bottom: 0.75rem;
 }
 
+.settings-tip {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+}
+
+.settings-tip summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #374151;
+}
+
+.settings-tip p,
+.settings-tip ol {
+    margin: 0.5rem 0;
+}
+
+.settings-tip ol {
+    padding-left: 1.25rem;
+}
+
+.settings-tip li {
+    margin-bottom: 0.25rem;
+}
+
 .field-buttons {
     display: flex;
     flex-wrap: wrap;
