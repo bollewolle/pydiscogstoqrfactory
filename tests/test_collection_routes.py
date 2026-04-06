@@ -401,11 +401,11 @@ class TestChangedReleases:
             assert b"No releases have changed" in response.data
 
 
-class TestGetChangedIds:
-    """Test the _get_changed_ids helper directly."""
+class TestChangeDetection:
+    """Test the _get_change_details and _get_changed_ids helpers."""
 
     def test_no_changes_when_data_matches(self, app, db):
-        from pydiscogsqrcodegenerator.blueprints.collection import _get_changed_ids
+        from pydiscogsqrcodegenerator.blueprints.collection import _get_change_details
 
         processed = ProcessedRelease(
             discogs_release_id=1,
@@ -430,10 +430,10 @@ class TestGetChangedIds:
             "format_size": '12"',
             "format_descriptions": "LP",
         }]
-        assert _get_changed_ids(releases) == set()
+        assert _get_change_details(releases) == {}
 
-    def test_detects_artist_change(self, app, db):
-        from pydiscogsqrcodegenerator.blueprints.collection import _get_changed_ids
+    def test_detects_artist_change_with_details(self, app, db):
+        from pydiscogsqrcodegenerator.blueprints.collection import _get_change_details
 
         processed = ProcessedRelease(
             discogs_release_id=1,
@@ -455,7 +455,46 @@ class TestGetChangedIds:
             "format_size": "",
             "format_descriptions": "",
         }]
-        assert _get_changed_ids(releases) == {1}
+        details = _get_change_details(releases)
+        assert 1 in details
+        assert len(details[1]) == 1
+        assert "Alpha" in details[1][0]
+        assert "Alpha Renamed" in details[1][0]
+        assert "Artist" in details[1][0]
+
+    def test_detects_multiple_changes(self, app, db):
+        from pydiscogsqrcodegenerator.blueprints.collection import _get_change_details
+
+        processed = ProcessedRelease(
+            discogs_release_id=1,
+            artist="Alpha",
+            title="Album",
+            year=2020,
+            folder_name="Vinyl",
+            format_name="Vinyl",
+            format_size='12"',
+            format_descriptions="LP",
+        )
+        db.session.add(processed)
+        db.session.commit()
+
+        releases = [{
+            "id": 1,
+            "artist": "Alpha Renamed",
+            "title": "Album (Deluxe)",
+            "year": 2021,
+            "discogs_folder": "Vinyl",
+            "format_name": "Vinyl",
+            "format_size": '12"',
+            "format_descriptions": "LP",
+        }]
+        details = _get_change_details(releases)
+        assert 1 in details
+        assert len(details[1]) == 3  # Artist, Title, Year
+        labels = [d.split(":")[0] for d in details[1]]
+        assert "Artist" in labels
+        assert "Title" in labels
+        assert "Year" in labels
 
     def test_detects_title_change(self, app, db):
         from pydiscogsqrcodegenerator.blueprints.collection import _get_changed_ids
@@ -527,7 +566,7 @@ class TestGetChangedIds:
         assert _get_changed_ids(releases) == set()
 
     def test_detects_folder_change(self, app, db):
-        from pydiscogsqrcodegenerator.blueprints.collection import _get_changed_ids
+        from pydiscogsqrcodegenerator.blueprints.collection import _get_change_details
 
         processed = ProcessedRelease(
             discogs_release_id=1,
@@ -549,7 +588,9 @@ class TestGetChangedIds:
             "format_size": "",
             "format_descriptions": "",
         }]
-        assert _get_changed_ids(releases) == {1}
+        details = _get_change_details(releases)
+        assert 1 in details
+        assert any("Folder" in d for d in details[1])
 
     def test_detects_year_change(self, app, db):
         from pydiscogsqrcodegenerator.blueprints.collection import _get_changed_ids

@@ -263,6 +263,47 @@ a:hover {
     color: #92400e;
 }
 
+.has-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.has-tooltip .tooltip {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: #f9fafb;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    white-space: pre-line;
+    min-width: 220px;
+    max-width: 360px;
+    z-index: 10;
+    margin-bottom: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    text-align: left;
+    font-weight: normal;
+}
+
+.has-tooltip .tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1f2937;
+}
+
+.has-tooltip:hover .tooltip {
+    display: block;
+}
+
 .badge-experimental {
     background: #fef3c7;
     color: #92400e;

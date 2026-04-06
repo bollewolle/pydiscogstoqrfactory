@@ -92,8 +92,8 @@
                     {% if release.id in processed_ids %}
                         <span class="badge badge-processed">Processed</span>
                     {% endif %}
-                    {% if release.id in changed_ids %}
-                        <span class="badge badge-changed">Changed</span>
+                    {% if release.id in change_details %}
+                        <span class="badge badge-changed has-tooltip">Changed<span class="tooltip">{{ change_details[release.id] | join('\n') }}</span></span>
                     {% endif %}
                 </td>
                 <td>{{ processed_at_map.get(release.id, '') }}</td>

@@ -113,7 +113,7 @@ def folder_releases(folder_id: int):
 
     # Get processed release IDs and change detection
     processed_ids = _get_processed_ids()
-    changed_ids = _get_changed_ids(releases)
+    change_details = _get_change_details(releases)
     processed_at_map = _get_processed_at_map()
 
     # Filter out processed releases if requested
@@ -133,7 +133,7 @@ def folder_releases(folder_id: int):
         letter=letter,
         letters=letters,
         processed_ids=processed_ids,
-        changed_ids=changed_ids,
+        change_details=change_details,
         processed_at_map=processed_at_map,
         hide_processed=hide_processed,
     )
@@ -174,7 +174,7 @@ def latest():
     releases = _sort_releases(releases, sort, order)
 
     processed_ids = _get_processed_ids()
-    changed_ids = _get_changed_ids(releases)
+    change_details = _get_change_details(releases)
     processed_at_map = _get_processed_at_map()
 
     # Filter out processed releases if requested
@@ -192,7 +192,7 @@ def latest():
         hide_processed=hide_processed,
         letters=letters,
         processed_ids=processed_ids,
-        changed_ids=changed_ids,
+        change_details=change_details,
         processed_at_map=processed_at_map,
     )
 
@@ -216,12 +216,12 @@ def changed_releases():
         flash(f"Failed to retrieve releases: {e}", "error")
         return redirect(url_for("collection.landing"))
 
-    changed_ids = _get_changed_ids(releases)
+    change_details = _get_change_details(releases)
     processed_ids = _get_processed_ids()
     processed_at_map = _get_processed_at_map()
 
     # Filter to only changed releases
-    releases = [r for r in releases if r["id"] in changed_ids]
+    releases = [r for r in releases if r["id"] in change_details]
     releases = _sort_releases(releases, sort, order)
 
     # Filter by starting letter if specified
@@ -240,7 +240,7 @@ def changed_releases():
         letter=letter,
         letters=letters,
         processed_ids=processed_ids,
-        changed_ids=changed_ids,
+        change_details=change_details,
         processed_at_map=processed_at_map,
     )
 
@@ -369,7 +369,7 @@ def format_releases():
     releases = _sort_releases(releases, sort, order)
 
     processed_ids = _get_processed_ids()
-    changed_ids = _get_changed_ids(releases)
+    change_details = _get_change_details(releases)
     processed_at_map = _get_processed_at_map()
 
     if hide_processed:
@@ -395,7 +395,7 @@ def format_releases():
         order=order,
         letters=letters,
         processed_ids=processed_ids,
-        changed_ids=changed_ids,
+        change_details=change_details,
         processed_at_map=processed_at_map,
         hide_processed=hide_processed,
     )
@@ -421,14 +421,16 @@ def _get_processed_at_map() -> dict[int, str]:
     }
 
 
-def _get_changed_ids(releases: list[dict]) -> set[int]:
+def _get_change_details(releases: list[dict]) -> dict[int, list[str]]:
     """Compare current release data against stored processed data.
 
-    Returns set of discogs_release_ids where current data differs from stored snapshot.
+    Returns dict mapping discogs_release_id to a list of human-readable
+    change descriptions (e.g. 'Artist: "Old" → "New"').
+    Only includes releases that have actual changes.
     """
     release_ids = [r["id"] for r in releases]
     if not release_ids:
-        return set()
+        return {}
 
     processed_map = {
         p.discogs_release_id: p
@@ -437,38 +439,54 @@ def _get_changed_ids(releases: list[dict]) -> set[int]:
         ).all()
     }
 
-    changed = set()
+    # Field label, stored attribute, release dict key
+    field_checks = [
+        ("Artist", "artist", "artist"),
+        ("Title", "title", "title"),
+        ("Year", "year", "year"),
+        ("Folder", "folder_name", "discogs_folder"),
+        ("Format", "format_name", "format_name"),
+        ("Size", "format_size", "format_size"),
+        ("Description", "format_descriptions", "format_descriptions"),
+    ]
+
+    result: dict[int, list[str]] = {}
     for release in releases:
         rid = release["id"]
         stored = processed_map.get(rid)
         if not stored:
             continue  # Not processed yet — not "changed"
 
-        # Compare each field, but only if the stored value is not NULL.
-        # NULL means the field was not tracked when the release was processed,
-        # so we can't know if it changed — don't flag it.
-        checks = [
-            (stored.artist, release.get("artist", "")),
-            (stored.title, release.get("title", "")),
-            (stored.year, release.get("year") or 0),
-            (stored.folder_name, release.get("discogs_folder", "")),
-            (stored.format_name, release.get("format_name", "")),
-            (stored.format_size, release.get("format_size", "")),
-            (stored.format_descriptions, release.get("format_descriptions", "")),
-        ]
-        for stored_val, current_val in checks:
+        diffs = []
+        for label, attr, key in field_checks:
+            stored_val = getattr(stored, attr)
             if stored_val is None:
                 continue  # Never recorded — skip
-            if stored_val != current_val:
-                # Handle year: stored 0 vs current 0 shouldn't differ
-                if isinstance(current_val, int) and (stored_val or 0) != (current_val or 0):
-                    changed.add(rid)
-                    break
-                elif not isinstance(current_val, int) and stored_val != current_val:
-                    changed.add(rid)
-                    break
 
-    return changed
+            current_val = release.get(key, 0 if key == "year" else "")
+            if key == "year":
+                current_val = current_val or 0
+                stored_cmp = stored_val or 0
+            else:
+                stored_cmp = stored_val
+
+            if stored_cmp != current_val:
+                old = str(stored_val) if stored_val else "(empty)"
+                new = str(current_val) if current_val else "(empty)"
+                diffs.append(f'{label}: "{old}" \u2192 "{new}"')
+
+        if diffs:
+            result[rid] = diffs
+
+    return result
+
+
+def _get_changed_ids(releases: list[dict]) -> set[int]:
+    """Compare current release data against stored processed data.
+
+    Returns set of discogs_release_ids where current data differs from stored snapshot.
+    """
+    return set(_get_change_details(releases).keys())
 
 
 def _folder_has_changes(service, username, folder) -> bool:
