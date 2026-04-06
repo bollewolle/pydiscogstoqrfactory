@@ -113,11 +113,23 @@ class DiscogsService:
         _collection_cache[key] = {"timestamp": now, "items": items}
         return items
 
+    def get_cache_timestamp(self, username: str, folder_id: int) -> float | None:
+        """Get the cache timestamp for a folder, or None if not cached."""
+        cached = _collection_cache.get((username, folder_id))
+        if cached:
+            return cached["timestamp"]
+        return None
+
     def invalidate_cache(self, username: str) -> None:
         """Remove all cached data for a user."""
         keys_to_remove = [k for k in _collection_cache if k[0] == username]
         for k in keys_to_remove:
             del _collection_cache[k]
+
+    def invalidate_folder_cache(self, username: str, folder_id: int) -> None:
+        """Remove cached data for a specific folder (and the All folder)."""
+        for key in [(username, folder_id), (username, 0)]:
+            _collection_cache.pop(key, None)
 
     def get_folder_releases(
         self,

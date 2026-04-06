@@ -1,0 +1,12 @@
+{% if cache_time %}
+<div class="cache-info">
+    <span class="cache-time">Data last refreshed: {{ cache_time }}</span>
+    <form method="post" action="{{ url_for('collection.refresh_cache') }}" style="display:inline;">
+        {% if folder_id is defined %}
+            <input type="hidden" name="folder_id" value="{{ folder_id }}">
+        {% endif %}
+        <input type="hidden" name="return_url" value="{{ request.url }}">
+        <button type="submit" class="btn btn-sm">Refresh</button>
+    </form>
+</div>
+{% endif %}

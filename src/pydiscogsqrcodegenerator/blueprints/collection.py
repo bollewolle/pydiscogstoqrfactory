@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 from flask import (
     Blueprint,
@@ -128,6 +128,8 @@ def folder_releases(folder_id: int):
     # Get unique starting letters for the letter bar
     letters = sorted({r["artist"][0].upper() for r in releases if r["artist"]})
 
+    cache_time = _format_cache_time(service.get_cache_timestamp(username, folder_id))
+
     return render_template(
         "collection/releases.html",
         releases=releases,
@@ -142,6 +144,7 @@ def folder_releases(folder_id: int):
         processed_at_map=processed_at_map,
         hide_processed=hide_processed,
         show_changed=show_changed,
+        cache_time=cache_time,
     )
 
 
@@ -194,6 +197,8 @@ def latest():
 
     letters = sorted({r["artist"][0].upper() for r in releases if r["artist"]})
 
+    cache_time = _format_cache_time(service.get_cache_timestamp(username, 0))
+
     return render_template(
         "collection/latest.html",
         releases=releases,
@@ -206,6 +211,7 @@ def latest():
         processed_ids=processed_ids,
         change_details=change_details,
         processed_at_map=processed_at_map,
+        cache_time=cache_time,
     )
 
 
@@ -254,6 +260,7 @@ def changed_releases():
         processed_ids=processed_ids,
         change_details=change_details,
         processed_at_map=processed_at_map,
+        cache_time=_format_cache_time(service.get_cache_timestamp(username, 0)),
     )
 
 
@@ -399,6 +406,8 @@ def format_releases():
         label_parts.append(size)
     format_label = " - ".join(label_parts)
 
+    cache_time = _format_cache_time(service.get_cache_timestamp(username, 0))
+
     return render_template(
         "collection/format_releases.html",
         releases=releases,
@@ -415,7 +424,35 @@ def format_releases():
         processed_at_map=processed_at_map,
         hide_processed=hide_processed,
         show_changed=show_changed,
+        cache_time=cache_time,
     )
+
+
+@collection_bp.route("/collection/refresh", methods=["POST"])
+def refresh_cache():
+    """Invalidate cached data and redirect back to the referring page."""
+    service = get_authenticated_service()
+    if not service:
+        flash("Please log in first.", "warning")
+        return redirect(url_for("auth.login"))
+
+    username = session["username"]
+    folder_id = request.form.get("folder_id", type=int)
+
+    if folder_id is not None:
+        service.invalidate_folder_cache(username, folder_id)
+    else:
+        service.invalidate_cache(username)
+
+    return redirect(request.form.get("return_url") or request.referrer or url_for("collection.landing"))
+
+
+def _format_cache_time(timestamp: float | None) -> str:
+    """Format a cache timestamp as a human-readable local time string."""
+    if timestamp is None:
+        return ""
+    dt = datetime.fromtimestamp(timestamp, tz=timezone.utc).astimezone()
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _get_processed_ids() -> set[int]:
