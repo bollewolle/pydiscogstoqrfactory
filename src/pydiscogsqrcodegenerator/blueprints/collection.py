@@ -43,13 +43,22 @@ def folders():
         flash(f"Failed to retrieve folders: {e}", "error")
         return redirect(url_for("collection.landing"))
 
-    # Count processed releases per folder name
-    processed_per_folder = _get_processed_counts_by_folder()
+    # Determine which folders are fully processed
+    processed_ids = _get_processed_ids()
+    all_others_processed = True
     for folder in folder_list:
-        processed_count = processed_per_folder.get(folder["name"], 0)
-        folder["fully_processed"] = (
-            folder["count"] > 0 and processed_count >= folder["count"]
+        if folder["name"] == "All":
+            continue
+        folder["fully_processed"] = _is_folder_fully_processed(
+            service, username, folder, processed_ids,
         )
+        if not folder["fully_processed"]:
+            all_others_processed = False
+
+    # "All" folder is fully processed when every other folder is
+    for folder in folder_list:
+        if folder["name"] == "All":
+            folder["fully_processed"] = folder["count"] > 0 and all_others_processed
 
     return render_template("collection/folders.html", folders=folder_list)
 
@@ -277,18 +286,26 @@ def _get_processed_ids() -> set[int]:
     return {p.discogs_release_id for p in processed}
 
 
-def _get_processed_counts_by_folder() -> dict[str, int]:
-    """Get count of processed releases grouped by folder name."""
-    from sqlalchemy import func
+def _is_folder_fully_processed(service, username, folder, processed_ids) -> bool:
+    """Check if all releases in a folder are processed.
 
-    rows = (
-        db.session.query(
-            ProcessedRelease.folder_name, func.count(ProcessedRelease.id)
-        )
-        .group_by(ProcessedRelease.folder_name)
-        .all()
-    )
-    return {name: count for name, count in rows if name}
+    Uses cached release data when available (compares actual release IDs).
+    Falls back to comparing the folder's release count against the number
+    of processed releases with a matching folder name in the database.
+    """
+    if folder["count"] == 0:
+        return False
+
+    # Try cached data first (no API call)
+    cached_ids = service.get_cached_folder_release_ids(username, folder["id"])
+    if cached_ids is not None:
+        return cached_ids.issubset(processed_ids)
+
+    # Fallback: count processed releases by folder name in DB
+    count = ProcessedRelease.query.filter_by(
+        folder_name=folder["name"]
+    ).count()
+    return count >= folder["count"]
 
 
 def _sort_releases(releases: list[dict], sort: str, order: str) -> list[dict]:

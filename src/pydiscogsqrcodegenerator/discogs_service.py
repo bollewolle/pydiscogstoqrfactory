@@ -67,6 +67,18 @@ class DiscogsService:
             )
         return folders
 
+    def get_cached_folder_release_ids(self, username: str, folder_id: int) -> set[int] | None:
+        """Get release IDs for a folder from cache, without triggering an API call.
+
+        Returns None if the folder data is not cached.
+        """
+        now = time.time()
+        key = (username, folder_id)
+        cached = _collection_cache.get(key)
+        if not cached or (now - cached["timestamp"]) >= _CACHE_TTL:
+            return None
+        return {item["release"]["id"] for item in cached["items"]}
+
     def _get_cached_items(self, username: str, folder_id: int) -> list[dict]:
         """Get or build cached collection data for a folder.
 
@@ -84,11 +96,15 @@ class DiscogsService:
         folder = self._find_folder(user, folder_id)
         folder_name = folder.name
 
+        # Build folder_id -> name map for resolving items in the "All" folder
+        if folder_id == 0:
+            folder_names = {f.id: f.name for f in user.collection_folders}
+
         items = []
         for item in folder.releases:
             formats = getattr(item.release, "formats", None) or []
             if folder_id == 0:
-                item_folder = self._get_item_folder_name(item)
+                item_folder = self._get_item_folder_name(item, folder_names)
             else:
                 item_folder = folder_name
             release_data = self._normalize_release(item, item_folder)
@@ -333,9 +349,9 @@ class DiscogsService:
             return None
 
     @staticmethod
-    def _get_item_folder_name(item) -> str:
+    def _get_item_folder_name(item, folder_names: dict[int, str] | None = None) -> str:
         """Get folder name from a collection item, with fallback."""
-        folder = getattr(item, "folder", None)
-        if folder:
-            return getattr(folder, "name", "Unknown Folder")
+        folder_id = getattr(item, "folder_id", None)
+        if folder_id is not None and folder_names:
+            return folder_names.get(folder_id, "All")
         return "All"

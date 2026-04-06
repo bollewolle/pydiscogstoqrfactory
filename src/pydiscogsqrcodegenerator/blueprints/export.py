@@ -154,6 +154,7 @@ def mark_processed():
     username = session.get("username", "")
     count = 0
     for release in releases:
+        folder_name = release.get("discogs_folder", "")
         existing = ProcessedRelease.query.filter_by(
             discogs_release_id=release["id"]
         ).first()
@@ -163,11 +164,14 @@ def mark_processed():
                 artist=release.get("artist", ""),
                 title=release.get("title", ""),
                 year=release.get("year"),
-                folder_name=release.get("discogs_folder", ""),
+                folder_name=folder_name,
                 username=username,
             )
             db.session.add(processed)
             count += 1
+        elif folder_name and existing.folder_name != folder_name:
+            # Fix folder name if it was previously stored incorrectly
+            existing.folder_name = folder_name
 
     db.session.commit()
     flash(f"Marked {count} release(s) as processed.", "success")
