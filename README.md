@@ -2,6 +2,8 @@
 
 A web application that connects to the Discogs API to retrieve your record collection and generates QR code stickers for your physical releases — either as a printable PDF with sticker sheet layouts, or as a CSV file compatible with [QR Factory 3](https://www.tunabellysoftware.com/qrfactory/).
 
+> This is a personal project built with the help of [Claude Code](https://claude.ai/code). It's shared as-is for anyone who finds it useful. Feature requests and bug reports are welcome, but as this is maintained in my spare time, there's no guarantee they'll be addressed.
+
 ## Features
 
 - **Discogs OAuth Authentication** — Secure web-based OAuth 1.0a login
