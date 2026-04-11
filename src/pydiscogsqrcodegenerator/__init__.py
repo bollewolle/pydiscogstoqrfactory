@@ -93,6 +93,14 @@ def create_app(config_class=None):
         db.create_all()
         _migrate_schema(db)
 
+        # Restore any persisted collection snapshots so the landing page can
+        # report "Changed Releases" counts immediately after restart.
+        try:
+            from .discogs_service import load_persistent_entries
+            load_persistent_entries()
+        except Exception:
+            logger.exception("Failed to load persisted collection cache")
+
     # Start background scheduler for periodic Discogs collection scans
     try:
         from .scheduler import init_scheduler

@@ -104,6 +104,32 @@ class StickerLayout(db.Model):
         }
 
 
+class CachedCollection(db.Model):
+    """Persistent snapshot of the in-memory collection cache.
+
+    Lets a scheduled scan survive across app restarts: on startup we reload
+    any stored snapshots into ``_collection_cache`` and mark them persistent,
+    so the landing page can report "Changed Releases" counts immediately
+    without having to wait for the next scheduled run to re-warm the cache.
+    """
+
+    __tablename__ = "cached_collection"
+    __table_args__ = (
+        db.UniqueConstraint("username", "folder_id", name="uq_cached_collection_user_folder"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(255), nullable=False, index=True)
+    folder_id = db.Column(db.Integer, nullable=False)
+    updated_at = db.Column(
+        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+    data = db.Column(db.Text, nullable=False)  # JSON-encoded list of items
+
+    def __repr__(self):
+        return f"<CachedCollection {self.username} folder={self.folder_id}>"
+
+
 class ScanLog(db.Model):
     __tablename__ = "scan_log"
 

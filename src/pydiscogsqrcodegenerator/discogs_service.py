@@ -1,14 +1,122 @@
+import json
+import logging
 import re
 import time
-from datetime import date
+from datetime import date, datetime, timezone
 
 import discogs_client
 
+logger = logging.getLogger(__name__)
+
 # Module-level cache for collection data, keyed by (username, folder_id).
-# Each entry: {"timestamp": float, "items": list[dict]}
+# Each entry: {"timestamp": float, "items": list[dict], "persistent": bool}
 # Items contain: {"release": normalized dict, "formats": list[dict]}
 _collection_cache: dict[tuple[str, int], dict] = {}
 _CACHE_TTL = 300  # 5 minutes
+
+
+def _items_to_json(items: list[dict]) -> str:
+    """Serialize cached items to JSON, dropping any non-serializable values."""
+    return json.dumps(items, default=str)
+
+
+def _save_persistent_entry(username: str, folder_id: int, items: list[dict]) -> None:
+    """Persist a cache entry to the ``cached_collection`` table.
+
+    Any database/serialization error is logged but does not raise, because the
+    persistent cache is an optimization — the in-memory copy remains valid.
+    """
+    try:
+        from .extensions import db
+        from .models import CachedCollection
+
+        payload = _items_to_json(items)
+        existing = CachedCollection.query.filter_by(
+            username=username, folder_id=folder_id
+        ).first()
+        now = datetime.now(timezone.utc)
+        if existing:
+            existing.data = payload
+            existing.updated_at = now
+        else:
+            db.session.add(
+                CachedCollection(
+                    username=username,
+                    folder_id=folder_id,
+                    data=payload,
+                    updated_at=now,
+                )
+            )
+        db.session.commit()
+    except Exception:
+        logger.exception(
+            "Failed to persist cached_collection for %s folder=%s",
+            username,
+            folder_id,
+        )
+        try:
+            from .extensions import db
+            db.session.rollback()
+        except Exception:
+            pass
+
+
+def _delete_persistent_entries(username: str, folder_id: int | None = None) -> None:
+    """Remove persisted cache rows. When ``folder_id`` is None, removes all."""
+    try:
+        from .extensions import db
+        from .models import CachedCollection
+
+        query = CachedCollection.query.filter_by(username=username)
+        if folder_id is not None:
+            query = query.filter_by(folder_id=folder_id)
+        query.delete(synchronize_session=False)
+        db.session.commit()
+    except Exception:
+        logger.exception("Failed to delete cached_collection rows for %s", username)
+        try:
+            from .extensions import db
+            db.session.rollback()
+        except Exception:
+            pass
+
+
+def load_persistent_entries() -> int:
+    """Load all persisted cache rows into the in-memory cache.
+
+    Called during app startup so the landing page can report "Changed Releases"
+    counts immediately, even before the next scheduled scan runs. Returns the
+    number of entries loaded.
+    """
+    try:
+        from .models import CachedCollection
+
+        rows = CachedCollection.query.all()
+    except Exception:
+        logger.exception("Failed to load cached_collection rows")
+        return 0
+
+    loaded = 0
+    for row in rows:
+        try:
+            items = json.loads(row.data)
+        except Exception:
+            logger.warning(
+                "Skipping corrupt cached_collection row id=%s for %s",
+                row.id,
+                row.username,
+            )
+            continue
+        key = (row.username, row.folder_id)
+        _collection_cache[key] = {
+            "timestamp": row.updated_at.timestamp() if row.updated_at else time.time(),
+            "items": items,
+            "persistent": True,
+        }
+        loaded += 1
+    if loaded:
+        logger.info("Loaded %d persisted collection cache entries", loaded)
+    return loaded
 
 
 class DiscogsService:
@@ -139,6 +247,7 @@ class DiscogsService:
         _collection_cache.pop(key, None)
         items = self._get_cached_items(username, folder_id)
         _collection_cache[key]["persistent"] = True
+        _save_persistent_entry(username, folder_id, items)
         return len(items)
 
     def get_cache_timestamp(self, username: str, folder_id: int) -> float | None:
@@ -149,15 +258,19 @@ class DiscogsService:
         return None
 
     def invalidate_cache(self, username: str) -> None:
-        """Remove all cached data for a user."""
+        """Remove all cached data for a user (in-memory and persistent)."""
         keys_to_remove = [k for k in _collection_cache if k[0] == username]
         for k in keys_to_remove:
             del _collection_cache[k]
+        _delete_persistent_entries(username)
 
     def invalidate_folder_cache(self, username: str, folder_id: int) -> None:
         """Remove cached data for a specific folder (and the All folder)."""
         for key in [(username, folder_id), (username, 0)]:
             _collection_cache.pop(key, None)
+        _delete_persistent_entries(username, folder_id)
+        if folder_id != 0:
+            _delete_persistent_entries(username, 0)
 
     def get_folder_releases(
         self,
