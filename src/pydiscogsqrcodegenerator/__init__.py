@@ -93,6 +93,13 @@ def create_app(config_class=None):
         db.create_all()
         _migrate_schema(db)
 
+    # Start background scheduler for periodic Discogs collection scans
+    try:
+        from .scheduler import init_scheduler
+        init_scheduler(app)
+    except Exception:
+        logger.exception("Failed to initialize background scheduler")
+
     return app
 
 
@@ -106,6 +113,16 @@ def _migrate_schema(database):
         ("processed_release", "format_name", "VARCHAR(255)"),
         ("processed_release", "format_size", "VARCHAR(255)"),
         ("processed_release", "format_descriptions", "VARCHAR(512)"),
+        ("user_settings", "scan_schedule_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
+        ("user_settings", "scan_frequency", "VARCHAR(16)"),
+        ("user_settings", "scan_hour", "INTEGER"),
+        ("user_settings", "scan_minute", "INTEGER"),
+        ("user_settings", "scan_day_of_week", "INTEGER"),
+        ("user_settings", "scan_day_of_month", "INTEGER"),
+        ("user_settings", "scan_month_of_year", "INTEGER"),
+        ("user_settings", "last_scan_at", "DATETIME"),
+        ("user_settings", "last_scan_status", "VARCHAR(255)"),
+        ("user_settings", "display_timezone", "VARCHAR(64) NOT NULL DEFAULT 'UTC'"),
     ]
     for table, column, col_type in migrations:
         try:

@@ -12,8 +12,21 @@ from flask import (
 )
 
 from ..extensions import db
-from ..models import StickerLayout, UserSettings
+from ..models import ScanLog, StickerLayout, UserSettings
 from ..pdf_service import PDFService
+from ..scheduler import (
+    FREQUENCIES,
+    WEEKDAY_LABELS,
+    get_next_run_time,
+    run_scan,
+    sync_user_schedule,
+)
+from ..util_tz import (
+    DEFAULT_TIMEZONE,
+    is_valid_timezone,
+    list_timezones,
+    to_display,
+)
 
 settings_bp = Blueprint("settings", __name__, url_prefix="/settings")
 
@@ -78,6 +91,42 @@ def index():
     layouts = StickerLayout.query.filter_by(username=username).all()
     active_layout_id = settings.active_layout_id if settings else None
 
+    display_tz = (settings.display_timezone if settings else None) or DEFAULT_TIMEZONE
+
+    scan_schedule = {
+        "enabled": bool(settings and settings.scan_schedule_enabled),
+        "frequency": (settings.scan_frequency if settings else None) or "daily",
+        "hour": settings.scan_hour if settings and settings.scan_hour is not None else 3,
+        "minute": settings.scan_minute if settings and settings.scan_minute is not None else 0,
+        "day_of_week": settings.scan_day_of_week if settings and settings.scan_day_of_week is not None else 0,
+        "day_of_month": settings.scan_day_of_month if settings and settings.scan_day_of_month is not None else 1,
+        "month_of_year": settings.scan_month_of_year if settings and settings.scan_month_of_year is not None else 1,
+        "last_scan_at": to_display(settings.last_scan_at if settings else None, display_tz),
+        "last_scan_status": settings.last_scan_status if settings else None,
+        "next_run_time": to_display(get_next_run_time(username), display_tz),
+    }
+
+    scan_log_rows = (
+        ScanLog.query
+        .filter_by(username=username)
+        .order_by(ScanLog.started_at.desc())
+        .limit(20)
+        .all()
+    )
+    # Pre-convert timestamps to the user's tz so the template can render plain strftime.
+    scan_logs = [
+        {
+            "started_at": to_display(log.started_at, display_tz),
+            "trigger": log.trigger,
+            "status": log.status,
+            "duration_seconds": log.duration_seconds,
+            "items_scanned": log.items_scanned,
+            "changed_count": log.changed_count,
+            "message": log.message,
+        }
+        for log in scan_log_rows
+    ]
+
     return render_template(
         "settings/index.html",
         bottom_text=bottom_text,
@@ -87,6 +136,12 @@ def index():
         standard_layouts=STANDARD_LAYOUTS,
         printer_offset_top=printer_offset_top,
         printer_offset_left=printer_offset_left,
+        display_tz=display_tz,
+        available_timezones=list_timezones(),
+        scan_schedule=scan_schedule,
+        scan_frequencies=FREQUENCIES,
+        weekday_labels=WEEKDAY_LABELS,
+        scan_logs=scan_logs,
     )
 
 
@@ -102,12 +157,18 @@ def save():
     active_layout_id = request.form.get("active_layout_id", type=int)
     printer_offset_top = request.form.get("printer_offset_top", 0.0, type=float)
     printer_offset_left = request.form.get("printer_offset_left", 0.0, type=float)
+    display_timezone = request.form.get("display_timezone", DEFAULT_TIMEZONE)
+    if not is_valid_timezone(display_timezone):
+        display_timezone = DEFAULT_TIMEZONE
 
     settings = UserSettings.query.filter_by(username=username).first()
+    tz_changed = False
     if settings:
+        tz_changed = settings.display_timezone != display_timezone
         settings.bottom_text_template = bottom_text
         settings.printer_offset_top = printer_offset_top
         settings.printer_offset_left = printer_offset_left
+        settings.display_timezone = display_timezone
         if active_layout_id:
             settings.active_layout_id = active_layout_id
     else:
@@ -117,11 +178,100 @@ def save():
             active_layout_id=active_layout_id,
             printer_offset_top=printer_offset_top,
             printer_offset_left=printer_offset_left,
+            display_timezone=display_timezone,
         )
+        db.session.add(settings)
+        tz_changed = display_timezone != DEFAULT_TIMEZONE
+
+    db.session.commit()
+    # If the timezone changed, an existing scheduled job still has the old
+    # CronTrigger. Re-sync so it is rebuilt with the new tz.
+    if tz_changed and settings.scan_schedule_enabled:
+        try:
+            sync_user_schedule(username)
+        except Exception:
+            current_app.logger.exception(
+                "Failed to re-sync scan schedule after timezone change for %s", username
+            )
+    flash("Settings saved.", "success")
+    return redirect(url_for("settings.index"))
+
+
+@settings_bp.route("/schedule/save", methods=["POST"])
+def save_schedule():
+    """Save scheduled collection scan preferences."""
+    username = session.get("username")
+    if not username:
+        flash("Please log in first.", "warning")
+        return redirect(url_for("auth.login"))
+
+    schedule_fields = _parse_schedule_form(request.form)
+
+    settings = UserSettings.query.filter_by(username=username).first()
+    if settings:
+        for field, value in schedule_fields.items():
+            setattr(settings, field, value)
+    else:
+        settings = UserSettings(username=username, **schedule_fields)
         db.session.add(settings)
 
     db.session.commit()
-    flash("Settings saved.", "success")
+    try:
+        sync_user_schedule(username)
+    except Exception:
+        current_app.logger.exception("Failed to sync scan schedule for %s", username)
+    flash("Scan schedule saved.", "success")
+    return redirect(url_for("settings.index"))
+
+
+def _parse_schedule_form(form) -> dict:
+    """Extract scheduled-scan fields from the settings form."""
+    enabled = form.get("scan_schedule_enabled") == "1"
+    frequency = form.get("scan_frequency", "daily")
+    if frequency not in FREQUENCIES:
+        frequency = "daily"
+
+    def _int_or_none(name: str, default: int, lo: int, hi: int) -> int:
+        val = form.get(name, type=int)
+        if val is None:
+            val = default
+        return max(lo, min(hi, val))
+
+    return {
+        "scan_schedule_enabled": enabled,
+        "scan_frequency": frequency,
+        "scan_hour": _int_or_none("scan_hour", 3, 0, 23),
+        "scan_minute": _int_or_none("scan_minute", 0, 0, 59),
+        "scan_day_of_week": _int_or_none("scan_day_of_week", 0, 0, 6),
+        "scan_day_of_month": _int_or_none("scan_day_of_month", 1, 1, 31),
+        "scan_month_of_year": _int_or_none("scan_month_of_year", 1, 1, 12),
+    }
+
+
+@settings_bp.route("/scan-now", methods=["POST"])
+def scan_now():
+    """Trigger an on-demand collection scan for the logged-in user."""
+    username = session.get("username")
+    if not username:
+        flash("Please log in first.", "warning")
+        return redirect(url_for("auth.login"))
+
+    ok, msg = run_scan(username, trigger="manual")
+    flash(msg, "success" if ok else "error")
+    return redirect(url_for("settings.index"))
+
+
+@settings_bp.route("/scan-logs/clear", methods=["POST"])
+def clear_scan_logs():
+    """Delete all scan log entries for the logged-in user."""
+    username = session.get("username")
+    if not username:
+        flash("Please log in first.", "warning")
+        return redirect(url_for("auth.login"))
+
+    deleted = ScanLog.query.filter_by(username=username).delete()
+    db.session.commit()
+    flash(f"Cleared {deleted} scan log entries.", "success")
     return redirect(url_for("settings.index"))
 
 

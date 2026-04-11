@@ -67,6 +67,15 @@ class DiscogsService:
             )
         return folders
 
+    @staticmethod
+    def _cache_is_fresh(entry: dict, now: float) -> bool:
+        """A cache entry is fresh if it is marked persistent or within TTL."""
+        if not entry:
+            return False
+        if entry.get("persistent"):
+            return True
+        return (now - entry["timestamp"]) < _CACHE_TTL
+
     def get_cached_folder_release_ids(self, username: str, folder_id: int) -> set[int] | None:
         """Get release IDs for a folder from cache, without triggering an API call.
 
@@ -75,7 +84,7 @@ class DiscogsService:
         now = time.time()
         key = (username, folder_id)
         cached = _collection_cache.get(key)
-        if not cached or (now - cached["timestamp"]) >= _CACHE_TTL:
+        if not self._cache_is_fresh(cached, now):
             return None
         return {item["release"]["id"] for item in cached["items"]}
 
@@ -89,7 +98,7 @@ class DiscogsService:
         now = time.time()
         key = (username, folder_id)
         cached = _collection_cache.get(key)
-        if cached and (now - cached["timestamp"]) < _CACHE_TTL:
+        if self._cache_is_fresh(cached, now):
             return cached["items"]
 
         user = self.client.user(username)
@@ -110,8 +119,27 @@ class DiscogsService:
             release_data = self._normalize_release(item, item_folder)
             items.append({"release": release_data, "formats": formats})
 
-        _collection_cache[key] = {"timestamp": now, "items": items}
+        existing = _collection_cache.get(key) or {}
+        _collection_cache[key] = {
+            "timestamp": now,
+            "items": items,
+            "persistent": existing.get("persistent", False),
+        }
         return items
+
+    def warm_cache(self, username: str, folder_id: int = 0) -> int:
+        """Force a fresh fetch and mark the cache entry persistent.
+
+        Persistent entries skip the TTL check so the landing page can report
+        change counts between scheduled scans without triggering API calls.
+        Returns the number of items cached.
+        """
+        key = (username, folder_id)
+        # Drop any existing entry so _get_cached_items re-fetches.
+        _collection_cache.pop(key, None)
+        items = self._get_cached_items(username, folder_id)
+        _collection_cache[key]["persistent"] = True
+        return len(items)
 
     def get_cache_timestamp(self, username: str, folder_id: int) -> float | None:
         """Get the cache timestamp for a folder, or None if not cached."""

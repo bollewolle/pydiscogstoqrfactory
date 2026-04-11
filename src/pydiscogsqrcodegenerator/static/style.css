@@ -263,6 +263,61 @@ a:hover {
     color: #92400e;
 }
 
+.badge-success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.settings-scan-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    background: #fafafa;
+}
+
+.settings-scan-group h3 {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.scan-log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.scan-log-table th,
+.scan-log-table td {
+    text-align: left;
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+}
+
+.scan-log-table th {
+    background: #f3f4f6;
+    font-weight: 600;
+}
+
+.scan-log-row.scan-log-error {
+    background: #fef2f2;
+}
+
+.scan-log-message {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8rem;
+    color: #374151;
+    max-width: 32rem;
+    word-break: break-word;
+}
+
 .has-tooltip {
     position: relative;
     cursor: help;

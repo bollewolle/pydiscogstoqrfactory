@@ -13,6 +13,7 @@ from flask import (
 
 from ..extensions import db
 from ..models import ProcessedRelease
+from ..util_tz import get_user_zoneinfo
 from .auth import get_authenticated_service
 
 collection_bp = Blueprint("collection", __name__)
@@ -448,11 +449,11 @@ def refresh_cache():
 
 
 def _format_cache_time(timestamp: float | None) -> str:
-    """Format a cache timestamp as a human-readable local time string."""
+    """Format a cache timestamp in the logged-in user's display timezone."""
     if timestamp is None:
         return ""
-    dt = datetime.fromtimestamp(timestamp, tz=timezone.utc).astimezone()
-    return dt.strftime("%Y-%m-%d %H:%M:%S")
+    dt = datetime.fromtimestamp(timestamp, tz=timezone.utc).astimezone(get_user_zoneinfo())
+    return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
 
 
 def _get_processed_ids() -> set[int]:
@@ -464,17 +465,18 @@ def _get_processed_ids() -> set[int]:
 
 
 def _get_processed_at_map() -> dict[int, str]:
-    """Get mapping of release ID to formatted processed_at timestamp in local time."""
+    """Get mapping of release ID to formatted processed_at timestamp in the
+    logged-in user's display timezone."""
     rows = ProcessedRelease.query.with_entities(
         ProcessedRelease.discogs_release_id, ProcessedRelease.processed_at
     ).all()
+    tz = get_user_zoneinfo()
     result = {}
     for r in rows:
         if r.processed_at:
-            # Stored as UTC — convert to local time for display
+            # Stored as UTC — convert to the user's display timezone
             utc_dt = r.processed_at.replace(tzinfo=timezone.utc)
-            local_dt = utc_dt.astimezone()
-            result[r.discogs_release_id] = local_dt.strftime("%Y-%m-%d %H:%M")
+            result[r.discogs_release_id] = utc_dt.astimezone(tz).strftime("%Y-%m-%d %H:%M")
         else:
             result[r.discogs_release_id] = ""
     return result

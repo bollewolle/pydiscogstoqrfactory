@@ -46,6 +46,24 @@
     </div>
 
     <div class="settings-section">
+        <h2>Display Timezone</h2>
+        <p class="settings-help">
+            Choose the timezone used when <em>interpreting</em> scheduled scan times
+            (hour/minute) and when <em>displaying</em> all timestamps across the app
+            (scan logs, processed-at times, cache timestamps, etc.). Stored data is
+            always in UTC internally; this setting only affects how times are shown
+            and entered.
+        </p>
+        <div class="layout-select">
+            <select name="display_timezone" class="settings-select">
+                {% for tz in available_timezones %}
+                <option value="{{ tz }}" {% if tz == display_tz %}selected{% endif %}>{{ tz }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="settings-section">
         <h2>Active Sticker Layout</h2>
         <p class="settings-help">
             Select which sticker layout to use when generating QR PDF sticker sheets.
@@ -88,6 +106,143 @@
         <button type="button" class="btn btn-sm" id="reset-default-btn">Reset to Default</button>
     </div>
 </form>
+
+<div class="settings-section settings-scan-group">
+    <h2>Scheduled Collection Scan</h2>
+    <p class="settings-help">
+        Optionally schedule a background job that re-fetches your Discogs collection
+        on a recurring basis. After a scan runs, the home page will show an up-to-date
+        "Changed Releases" count without having to browse a folder first. All times
+        are interpreted in <strong>{{ display_tz }}</strong> (change this in the
+        Display Timezone section above).
+    </p>
+
+    <form method="post" action="{{ url_for('settings.save_schedule') }}" id="schedule-form">
+        <label class="settings-checkbox">
+            <input type="checkbox" name="scan_schedule_enabled" id="scan-enabled" value="1"
+                {% if scan_schedule.enabled %}checked{% endif %}>
+            Enable scheduled scans
+        </label>
+
+        <div id="scan-schedule-fields" class="layout-fields"
+             {% if not scan_schedule.enabled %}style="opacity:0.5"{% endif %}>
+            <label>Frequency
+                <select name="scan_frequency" id="scan-frequency" class="settings-select">
+                    {% for f in scan_frequencies %}
+                    <option value="{{ f }}" {% if scan_schedule.frequency == f %}selected{% endif %}>{{ f|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Hour (0-23)
+                <input type="number" name="scan_hour" min="0" max="23" value="{{ scan_schedule.hour }}" class="layout-input layout-input-sm">
+            </label>
+            <label>Minute (0-59)
+                <input type="number" name="scan_minute" min="0" max="59" value="{{ scan_schedule.minute }}" class="layout-input layout-input-sm">
+            </label>
+            <label data-freq-field="weekly">Day of week
+                <select name="scan_day_of_week" class="settings-select">
+                    {% for dow, name in weekday_labels %}
+                    <option value="{{ dow }}" {% if scan_schedule.day_of_week == dow %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label data-freq-field="monthly yearly">Day of month
+                <input type="number" name="scan_day_of_month" min="1" max="31" value="{{ scan_schedule.day_of_month }}" class="layout-input layout-input-sm">
+            </label>
+            <label data-freq-field="yearly">Month (1-12)
+                <input type="number" name="scan_month_of_year" min="1" max="12" value="{{ scan_schedule.month_of_year }}" class="layout-input layout-input-sm">
+            </label>
+        </div>
+
+        {% if scan_schedule.next_run_time %}
+        <p class="settings-help">
+            Next run: {{ scan_schedule.next_run_time.strftime('%Y-%m-%d %H:%M:%S %Z') }}
+        </p>
+        {% elif scan_schedule.enabled %}
+        <p class="settings-help">
+            Schedule enabled but no job is currently registered. Save the schedule to register it.
+        </p>
+        {% endif %}
+
+        {% if scan_schedule.last_scan_at %}
+        <p class="settings-help">
+            Last scan: {{ scan_schedule.last_scan_at.strftime('%Y-%m-%d %H:%M %Z') }}
+            {% if scan_schedule.last_scan_status %} &ndash; {{ scan_schedule.last_scan_status }}{% endif %}
+        </p>
+        {% else %}
+        <p class="settings-help">No scan has run yet.</p>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Schedule</button>
+        </div>
+    </form>
+
+    <hr class="settings-divider">
+
+    <h3>Run a scan on demand</h3>
+    <form method="post" action="{{ url_for('settings.scan_now') }}" class="inline-form">
+        <button type="submit" class="btn btn-sm">Run Scan Now</button>
+        <span class="settings-help">&nbsp;Runs a one-off scan immediately, independent of the schedule.</span>
+    </form>
+
+    <hr class="settings-divider">
+
+    <h3>Scan Logs</h3>
+    <p class="settings-help">
+        History of the last {{ scan_logs|length }} scheduled and manual scans. Check here if a
+        scheduled scan didn't show changes you expected &mdash; the message column reports
+        what happened (auth errors, API failures, number of items scanned, etc.).
+    </p>
+    {% if scan_logs %}
+    <table class="scan-log-table">
+        <thead>
+            <tr>
+                <th>Started</th>
+                <th>Trigger</th>
+                <th>Status</th>
+                <th>Duration</th>
+                <th>Scanned</th>
+                <th>Changed</th>
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in scan_logs %}
+            <tr class="scan-log-row scan-log-{{ log.status }}">
+                <td>{{ log.started_at.strftime('%Y-%m-%d %H:%M:%S %Z') }}</td>
+                <td>{{ log.trigger }}</td>
+                <td>
+                    {% if log.status == 'success' %}
+                        <span class="badge badge-success">success</span>
+                    {% elif log.status == 'error' %}
+                        <span class="badge badge-danger">error</span>
+                    {% else %}
+                        <span class="badge">{{ log.status }}</span>
+                    {% endif %}
+                </td>
+                <td>{% if log.duration_seconds is not none %}{{ '%.1f'|format(log.duration_seconds) }}s{% else %}&ndash;{% endif %}</td>
+                <td>{{ log.items_scanned if log.items_scanned is not none else '-' }}</td>
+                <td>
+                    {% if log.changed_count and log.changed_count > 0 %}
+                        <span class="badge badge-changed">{{ log.changed_count }}</span>
+                    {% else %}
+                        {{ log.changed_count if log.changed_count is not none else '-' }}
+                    {% endif %}
+                </td>
+                <td class="scan-log-message">{{ log.message or '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <form method="post" action="{{ url_for('settings.clear_scan_logs') }}" class="inline-form" style="margin-top: 0.75rem;">
+        <button type="submit" class="btn btn-sm btn-danger"
+                onclick="return confirm('Clear all scan log entries?')">Clear Logs</button>
+    </form>
+    {% else %}
+    <p class="settings-help">No scans have run yet.</p>
+    {% endif %}
+</div>
 
 <hr class="settings-divider">
 
@@ -309,6 +464,26 @@
 
     // Reset standard layouts to app defaults
     var standardLayouts = {{ standard_layouts | tojson }};
+
+    // Scheduled scan: show/hide frequency-specific fields and toggle enable state
+    var scanEnabled = document.getElementById('scan-enabled');
+    var scanFields = document.getElementById('scan-schedule-fields');
+    var scanFrequency = document.getElementById('scan-frequency');
+
+    function updateScanFields() {
+        if (!scanFields || !scanFrequency) return;
+        var freq = scanFrequency.value;
+        scanFields.querySelectorAll('[data-freq-field]').forEach(function(el) {
+            var freqs = el.getAttribute('data-freq-field').split(' ');
+            el.style.display = freqs.indexOf(freq) >= 0 ? '' : 'none';
+        });
+        if (scanEnabled) {
+            scanFields.style.opacity = scanEnabled.checked ? '1' : '0.5';
+        }
+    }
+    if (scanEnabled) scanEnabled.addEventListener('change', updateScanFields);
+    if (scanFrequency) scanFrequency.addEventListener('change', updateScanFields);
+    updateScanFields();
 
     document.querySelectorAll('[data-reset-default-layout]').forEach(function(btn) {
         btn.addEventListener('click', function() {

@@ -104,6 +104,37 @@ class StickerLayout(db.Model):
         }
 
 
+class ScanLog(db.Model):
+    __tablename__ = "scan_log"
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(255), nullable=False, index=True)
+    started_at = db.Column(
+        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+    finished_at = db.Column(db.DateTime, nullable=True)
+    trigger = db.Column(db.String(16), nullable=False, default="scheduled")  # scheduled|manual
+    status = db.Column(db.String(16), nullable=False, default="running")  # running|success|error
+    items_scanned = db.Column(db.Integer, nullable=True)
+    changed_count = db.Column(db.Integer, nullable=True)
+    message = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):
+        return f"<ScanLog {self.username} {self.started_at} {self.status}>"
+
+    @property
+    def duration_seconds(self) -> float | None:
+        if not self.finished_at:
+            return None
+        start = self.started_at
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=timezone.utc)
+        end = self.finished_at
+        if end.tzinfo is None:
+            end = end.replace(tzinfo=timezone.utc)
+        return (end - start).total_seconds()
+
+
 class UserSettings(db.Model):
     __tablename__ = "user_settings"
 
@@ -114,12 +145,25 @@ class UserSettings(db.Model):
         nullable=False,
         default="{artist} \u2013 {title} [{year}]\n{discogs_folder}",
     )
+    # IANA timezone name, e.g. "Europe/Brussels". Applied to the schedule
+    # interpretation and to all timestamps displayed in the UI.
+    display_timezone = db.Column(db.String(64), nullable=False, default="UTC")
     printer_offset_top = db.Column(db.Float, nullable=False, default=0.0)  # mm
     printer_offset_left = db.Column(db.Float, nullable=False, default=0.0)  # mm
     active_layout_id = db.Column(
         db.Integer, db.ForeignKey("sticker_layout.id"), nullable=True
     )
     active_layout = db.relationship("StickerLayout", foreign_keys=[active_layout_id])
+    # Scheduled collection scan configuration
+    scan_schedule_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    scan_frequency = db.Column(db.String(16), nullable=True)  # daily|weekly|monthly|yearly
+    scan_hour = db.Column(db.Integer, nullable=True)  # 0-23
+    scan_minute = db.Column(db.Integer, nullable=True)  # 0-59
+    scan_day_of_week = db.Column(db.Integer, nullable=True)  # 0=Mon..6=Sun (weekly)
+    scan_day_of_month = db.Column(db.Integer, nullable=True)  # 1-31 (monthly)
+    scan_month_of_year = db.Column(db.Integer, nullable=True)  # 1-12 (yearly)
+    last_scan_at = db.Column(db.DateTime, nullable=True)
+    last_scan_status = db.Column(db.String(255), nullable=True)
     updated_at = db.Column(
         db.DateTime,
         nullable=False,
