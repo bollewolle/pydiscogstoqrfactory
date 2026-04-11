@@ -57,6 +57,7 @@ def folders():
 
     # Determine which folders are fully processed and have changes
     processed_ids = _get_processed_ids()
+    changed_folder_names = _get_changed_folder_names(service, username)
     all_others_processed = True
     any_others_changed = False
     for folder in folder_list:
@@ -66,7 +67,7 @@ def folders():
             service, username, folder, processed_ids,
         )
         folder["has_changes"] = _folder_has_changes(
-            service, username, folder,
+            service, username, folder, changed_folder_names,
         )
         if not folder["fully_processed"]:
             all_others_processed = False
@@ -585,13 +586,61 @@ def _get_changed_ids(releases: list[dict]) -> set[int]:
     return set(_get_change_details(releases).keys())
 
 
-def _folder_has_changes(service, username, folder) -> bool:
+def _get_changed_folder_names(service, username) -> set[str] | None:
+    """Return the set of folder names that currently contain a changed release.
+
+    Uses the cached "All" folder (folder 0), whose items already carry each
+    release's current folder name (``discogs_folder``). This lets the folder
+    listing show change badges even when individual per-folder caches are cold
+    (e.g. after a scheduled scan, which only warms folder 0).
+
+    When a user owns multiple copies of the same release, each copy is a
+    separate collection instance and may live in a different folder. Diffs
+    are computed per-copy so only the folder(s) actually containing a copy
+    whose data differs from its stored snapshot get badged.
+
+    Returns None if the folder 0 cache is cold.
+    """
+    cached_ids = service.get_cached_folder_release_ids(username, 0)
+    if cached_ids is None:
+        return None
+    items = service._get_cached_items(username, 0)
+    releases = [item["release"] for item in items]
+
+    release_ids = [r["id"] for r in releases]
+    if not release_ids:
+        return set()
+    processed_map = {
+        p.discogs_release_id: p
+        for p in ProcessedRelease.query.filter(
+            ProcessedRelease.discogs_release_id.in_(release_ids)
+        ).all()
+    }
+
+    folder_names: set[str] = set()
+    for r in releases:
+        stored = processed_map.get(r["id"])
+        if not stored:
+            continue
+        if not _compute_release_diffs(r, stored):
+            continue
+        fname = r.get("discogs_folder")
+        if fname:
+            folder_names.add(fname)
+    return folder_names
+
+
+def _folder_has_changes(service, username, folder, changed_folder_names) -> bool:
     """Check if any release in a folder has changed since processing.
 
-    Only uses cached data — returns False if cache is cold to avoid API calls.
+    Prefers the folder 0 cache (via ``changed_folder_names``); falls back to
+    the folder's own cache if available. Returns False when no cached data
+    is available, to avoid API calls.
     """
     if folder["count"] == 0:
         return False
+    if changed_folder_names is not None:
+        return folder["name"] in changed_folder_names
     cached_ids = service.get_cached_folder_release_ids(username, folder["id"])
     if cached_ids is None:
         return False
